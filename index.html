@@ -35,6 +35,7 @@
             <p class="mt-2 text-xl text-gray-400">Official Game Archive</p>
         </header>
 
+
         <!-- Date Picker Section -->
         <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
             <label for="gameDate" class="text-lg font-medium text-gray-300">
@@ -55,6 +56,7 @@
             </button>
         </div>
 
+
         <!-- Game Results Display Area -->
         <section class="mt-8">
             <h2 class="text-2xl font-bold text-gray-300 mb-4 border-b border-gray-700 pb-2">Match Report(s)</h2>
@@ -65,6 +67,7 @@
             </div>
         </section>
 
+
         <!-- Footer / Instructions -->
         <footer class="mt-10 pt-4 border-t border-gray-700 text-center text-sm text-gray-500">
             <p>ATLAS Corporation | Country, City, Continent Link Game</p>
@@ -72,8 +75,10 @@
         </footer>
     </div>
 
+
     <script>
         let ATLAS_ARCHIVE = null; // Variable to hold the fetched JSON data (an array of games)
+
 
         // Converts YYYY-MM-DD (from input) to DD/MM/YYYY (for comparison/display)
         function convertDateToDDMMYYYY(dateString) {
@@ -88,16 +93,20 @@
             const viewBtn = document.getElementById('viewGameBtn');
             const initialMessage = document.getElementById('initial-message');
 
+
             viewBtn.disabled = true;
             initialMessage.classList.add('animate-pulse');
+
 
             try {
                 // Fetch the data from the relative path
                 const response = await fetch('game_archive.json');
 
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
 
                 // Parse the JSON array
                 ATLAS_ARCHIVE = await response.json();
@@ -119,13 +128,16 @@
             }
         }
 
+
         // --- Core Logic Function to Display Games ---
         function showGame() {
             if (!ATLAS_ARCHIVE) return; // Safeguard if data isn't loaded
 
+
             const dateInput = document.getElementById('gameDate');
             const resultsDiv = document.getElementById('game-results');
             const dateValue = dateInput.value; // YYYY-MM-DD format
+
 
             resultsDiv.innerHTML = '';
             
@@ -134,10 +146,13 @@
                 return;
             }
 
+
             const searchDateDDMMYYYY = convertDateToDDMMYYYY(dateValue);
+
 
             // Filter all games that match the selected date (DD/MM/YYYY)
             const gamesForDate = ATLAS_ARCHIVE.filter(game => game.date === searchDateDDMMYYYY);
+
 
             if (gamesForDate.length === 0) {
                 resultsDiv.innerHTML = `
@@ -147,19 +162,20 @@
                 return;
             }
 
+
             // Loop through all games found for the date and render them
-            gamesForDate.forEach((game, index) => {
+            gamesForDate.forEach((game) => {
                 const entries = game.entries;
                 const status = game.status;
                 
                 let entryHTML = '';
+
 
                 // 1. Generate the list of entries
                 if (entries.length > 0) {
                     entryHTML = `
                         <ul class="space-y-3 mt-4 px-1">
                             ${entries.map((item, entryIndex) => {
-                                // --- CHANGE: Removed color coding for players/borders ---
                                 const neutralBorder = 'border-atlas-blue'; 
                                 const neutralPlayerBg = 'bg-gray-600';
                                 
@@ -184,13 +200,14 @@
                      entryHTML = `<p class="text-gray-400 text-center py-2 text-sm">No entries have been recorded yet for this game.</p>`;
                 }
 
+
                 // 2. Generate the Game Card for this match
                 const gameCard = `
                     <div class="bg-gray-700 p-4 rounded-lg shadow-xl mb-6">
                         <div class="flex justify-between items-start border-b border-gray-600 pb-2 mb-3">
                             <div>
-                                <h3 class="font-extrabold text-white text-xl">${game.gameName || `Game ${index + 1}`}</h3>
-                                <p class="text-sm text-gray-400">ID: <span class="font-mono text-atlas-blue">${game.id}</span></p>
+                                <!-- Updated Title using only the ID -->
+                                <h3 class="font-extrabold text-white text-xl">Game Report: <span class="text-atlas-blue">${game.id}</span></h3>
                             </div>
                             <span class="text-sm text-gray-300 bg-gray-600 py-1 px-3 rounded-full">${game.date}</span>
                         </div>
@@ -207,9 +224,11 @@
                         </div>
                     </div>`;
 
+
                 resultsDiv.innerHTML += gameCard;
             });
         }
+
 
         // Set the default date to today and start loading the archive data
         document.addEventListener('DOMContentLoaded', () => {
@@ -221,6 +240,11 @@
             loadArchiveData(); 
         });
 
+
     </script>
 </body>
 </html>
+
+
+
+
