@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS Corporation | Game Archive</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Set a custom font and background for a corporate look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1a26; /* Dark Navy Background */
+        }
+        /* Custom scrollbar for game results */
+        .scrollable-results::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrollable-results::-webkit-scrollbar-thumb {
+            background-color: #2b6cb0; /* Bright blue for scroll thumb */
+            border-radius: 3px;
+        }
+        .text-atlas-blue {
+            color: #2b6cb0; /* Tailwind blue-700 equivalent */
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+    <div class="max-w-4xl mx-auto bg-gray-800 shadow-2xl rounded-xl p-6 md:p-10">
+        <!-- Header -->
+        <header class="text-center mb-10 border-b border-gray-700 pb-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+                ATLAS <span class="text-atlas-blue">Corporation</span>
+            </h1>
+            <p class="mt-2 text-xl text-gray-400">Official Game Archive</p>
+        </header>
+
+        <!-- Date Picker Section -->
+        <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
+            <label for="gameDate" class="text-lg font-medium text-gray-300">
+                Select Game Date:
+            </label>
+            <input 
+                type="date" 
+                id="gameDate" 
+                class="p-3 text-lg rounded-lg border-2 border-gray-600 bg-gray-700 text-white focus:outline-none focus:border-atlas-blue transition w-full sm:w-auto"
+            >
+            <button 
+                id="viewGameBtn" 
+                class="w-full sm:w-auto px-6 py-3 text-lg font-semibold rounded-lg text-white bg-atlas-blue hover:bg-blue-700 transition duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] disabled:opacity-50"
+                onclick="showGame()"
+                disabled 
+            >
+                View Game(s)
+            </button>
+        </div>
+
+        <!-- Game Results Display Area -->
+        <section class="mt-8">
+            <h2 class="text-2xl font-bold text-gray-300 mb-4 border-b border-gray-700 pb-2">Match Report(s)</h2>
+            <div id="game-results" class="bg-gray-700 p-4 rounded-lg min-h-[250px] max-h-[500px] overflow-y-auto scrollable-results">
+                <p id="initial-message" class="text-gray-400 text-center py-16">
+                    Loading ATLAS Corporation archive data...
+                </p>
+            </div>
+        </section>
+
+        <!-- Footer / Instructions -->
+        <footer class="mt-10 pt-4 border-t border-gray-700 text-center text-sm text-gray-500">
+            <p>ATLAS Corporation | Country, City, Continent Link Game</p>
+            <p class="mt-1">Players are **A** and **D**.</p>
+        </footer>
+    </div>
+
+    <script>
+        let ATLAS_ARCHIVE = null; // Variable to hold the fetched JSON data (an array of games)
+
+        // Converts YYYY-MM-DD (from input) to DD/MM/YYYY (for comparison/display)
+        function convertDateToDDMMYYYY(dateString) {
+            if (!dateString) return null;
+            const parts = dateString.split('-'); // e.g., ["2025", "10", "15"]
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        
+        // --- Data Loading Function ---
+        async function loadArchiveData() {
+            const resultsDiv = document.getElementById('game-results');
+            const viewBtn = document.getElementById('viewGameBtn');
+            const initialMessage = document.getElementById('initial-message');
+
+            viewBtn.disabled = true;
+            initialMessage.classList.add('animate-pulse');
+
+            try {
+                // Fetch the data from the relative path
+                const response = await fetch('game_archive.json');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Parse the JSON array
+                ATLAS_ARCHIVE = await response.json();
+                
+                // Success
+                initialMessage.textContent = "Archive loaded successfully. Select a date to view a match report.";
+                initialMessage.classList.remove('animate-pulse');
+                viewBtn.disabled = false;
+                
+            } catch (error) {
+                // Failure
+                console.error("Failed to load game archive data:", error);
+                resultsDiv.innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-xl font-bold text-red-500 mb-2">Error Loading Archive!</p>
+                        <p class="text-gray-300">Could not fetch <code>game_archive.json</code>.</p>
+                        <p class="text-sm text-gray-500 mt-2">Please ensure the file exists in the same directory and is a valid JSON array.</p>
+                    </div>`;
+            }
+        }
+
+        // --- Core Logic Function to Display Games ---
+        function showGame() {
+            if (!ATLAS_ARCHIVE) return; // Safeguard if data isn't loaded
+
+            const dateInput = document.getElementById('gameDate');
+            const resultsDiv = document.getElementById('game-results');
+            const dateValue = dateInput.value; // YYYY-MM-DD format
+
+            resultsDiv.innerHTML = '';
+            
+            if (!dateValue) {
+                resultsDiv.innerHTML = '<p class="text-red-400 text-center py-16">Please select a valid date to view the game.</p>';
+                return;
+            }
+
+            const searchDateDDMMYYYY = convertDateToDDMMYYYY(dateValue);
+
+            // Filter all games that match the selected date (DD/MM/YYYY)
+            const gamesForDate = ATLAS_ARCHIVE.filter(game => game.date === searchDateDDMMYYYY);
+
+            if (gamesForDate.length === 0) {
+                resultsDiv.innerHTML = `
+                    <p class="text-gray-400 text-center py-16">
+                        No official ATLAS Corporation games were recorded for <span class="font-bold text-white">${searchDateDDMMYYYY}</span>.
+                    </p>`;
+                return;
+            }
+
+            // Loop through all games found for the date and render them
+            gamesForDate.forEach((game, index) => {
+                const entries = game.entries;
+                const status = game.status;
+                
+                let entryHTML = '';
+
+                // 1. Generate the list of entries
+                if (entries.length > 0) {
+                    entryHTML = `
+                        <ul class="space-y-3 mt-4 px-1">
+                            ${entries.map((item, entryIndex) => {
+                                // --- CHANGE: Removed color coding for players/borders ---
+                                const neutralBorder = 'border-atlas-blue'; 
+                                const neutralPlayerBg = 'bg-gray-600';
+                                
+                                return `
+                                    <li class="p-3 bg-gray-800 rounded-lg shadow-md border-l-4 ${neutralBorder}">
+                                        <div class="flex justify-between items-center">
+                                            <!-- Entry Content with sequential number -->
+                                            <span class="text-white text-lg font-semibold">
+                                                ${entryIndex + 1}. ${item.entry}
+                                            </span>
+                                            
+                                            <!-- Player Badge (A or D) -->
+                                            <span class="text-sm font-bold w-6 h-6 leading-6 text-center rounded-full text-white ${neutralPlayerBg} shadow-inner">
+                                                ${item.player}
+                                            </span>
+                                        </div>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>`;
+                } else {
+                     entryHTML = `<p class="text-gray-400 text-center py-2 text-sm">No entries have been recorded yet for this game.</p>`;
+                }
+
+                // 2. Generate the Game Card for this match
+                const gameCard = `
+                    <div class="bg-gray-700 p-4 rounded-lg shadow-xl mb-6">
+                        <div class="flex justify-between items-start border-b border-gray-600 pb-2 mb-3">
+                            <div>
+                                <h3 class="font-extrabold text-white text-xl">${game.gameName || `Game ${index + 1}`}</h3>
+                                <p class="text-sm text-gray-400">ID: <span class="font-mono text-atlas-blue">${game.id}</span></p>
+                            </div>
+                            <span class="text-sm text-gray-300 bg-gray-600 py-1 px-3 rounded-full">${game.date}</span>
+                        </div>
+                        
+                        <p class="font-bold text-gray-300 text-lg border-b border-gray-700 pb-1 mb-2">Game Entries:</p>
+                        
+                        <!-- Entries List -->
+                        ${entryHTML}
+                        
+                        <!-- Game Result Field (Visually separated at the bottom) -->
+                        <div class="bg-gray-800 border-l-4 border-yellow-500 p-3 rounded-md mt-6 shadow-inner">
+                            <p class="font-bold text-yellow-300 text-lg mb-1">Game Result:</p>
+                            <p class="text-white text-md">${status}</p>
+                        </div>
+                    </div>`;
+
+                resultsDiv.innerHTML += gameCard;
+            });
+        }
+
+        // Set the default date to today and start loading the archive data
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set input default to today's date (YYYY-MM-DD format required by <input type="date">)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('gameDate').value = today;
+            
+            // Start loading the data immediately
+            loadArchiveData(); 
+        });
+
+    </script>
+</body>
+</html>
