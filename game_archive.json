@@ -1,0 +1,47 @@
+[
+    {
+        "id": "16102025-01",
+        "date": "16/10/2025",
+        "entries": [
+            { "entry": "Argentina", "player": "A" },
+            { "entry": "Dubai", "player": "D" },
+            { "entry": "Asia", "player": "A" },
+            { "entry": "Delaware", "player": "D" }
+        ],
+        "status": "In Progress"
+    },
+    {
+        "id": "16102025-02",
+        "date": "16/10/2025",
+        "entries": [
+            { "entry": "Dortmund", "player": "A" },
+            { "entry": "Accra", "player": "D" }
+        ],
+        "status": "Completed (Player A could not follow 'Accra' with a 'D' entry.)"
+    },
+    {
+        "id": "15102025-01",
+        "date": "15/10/2025",
+        "entries": [
+            { "entry": "Denmark", "player": "D" },
+            { "entry": "Asmara", "player": "A" },
+            { "entry": "Dakar", "player": "D" },
+            { "entry": "Antarctica", "player": "A" }
+        ],
+        "status": "Completed (Player D could not follow 'Antarctica' with a 'D' entry.)"
+    },
+    {
+        "id": "10102025-01",
+        "date": "10/10/2025",
+        "entries": [
+            { "entry": "Angola", "player": "A" },
+            { "entry": "Delaware", "player": "D" },
+            { "entry": "Alabama", "player": "A" },
+            { "entry": "Doha", "player": "D" }
+        ],
+        "status": "Completed (Player A could not follow 'Doha' with an 'A' entry.)"
+    }
+]
+
+
+
