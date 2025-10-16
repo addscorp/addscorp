@@ -11,15 +11,6 @@
         "status": "In Progress"
     },
     {
-        "id": "16102025-02",
-        "date": "16/10/2025",
-        "entries": [
-            { "entry": "Dortmund", "player": "A" },
-            { "entry": "Accra", "player": "D" }
-        ],
-        "status": "Completed (Player A could not follow 'Accra' with a 'D' entry.)"
-    },
-    {
         "id": "15102025-01",
         "date": "15/10/2025",
         "entries": [
