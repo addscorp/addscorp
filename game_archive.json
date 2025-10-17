@@ -1,12 +1,13 @@
 [
     {
-        "id": "16102025-01",
-        "date": "16/10/2025",
+        "id": "17102025-01",
+        "date": "17/10/2025",
         "entries": [
-            { "entry": "Argentina", "player": "A" },
-            { "entry": "Dubai", "player": "D" },
-            { "entry": "Asia", "player": "A" },
-            { "entry": "Delaware", "player": "D" }
+            { "entry": "Singapore", "player": "AG" },
+            { "entry": "England", "player": "DJ" },
+            { "entry": "Dharwad", "player": "AG" },
+            { "entry": "Denmark", "player": "D" },
+            { "entry": "Kolkata", "player": "AG"}
         ],
         "status": "In Progress"
     },
