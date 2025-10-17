@@ -114,7 +114,7 @@
       { "entry": "Dortmund", "player": "AG" },
       { "entry": "Accra", "player": "DJ" }
     ],
-    "status": "Completed (Player A could not follow 'Accra' with a 'D' entry.)"
+    "status": "Completed (Player AG could not follow 'Accra' with a 'a' entry.)"
   },
   {
     "id": "15102025-01",
@@ -125,7 +125,7 @@
       { "entry": "Dakar", "player": "DJ" },
       { "entry": "Antarctica", "player": "AG" }
     ],
-    "status": "Completed (Player D could not follow 'Antarctica' with a 'D' entry.)"
+    "status": "Completed (Player DJ could not follow 'Antarctica' with a 'a' entry.)"
   },
   {
     "id": "10102025-01",
@@ -136,6 +136,6 @@
       { "entry": "Alabama", "player": "AG" },
       { "entry": "Doha", "player": "DJ" }
     ],
-    "status": "Completed (Player A could not follow 'Doha' with an 'A' entry.)"
+    "status": "Completed (Player AG could not follow 'Doha' with an 'A' entry.)"
   }
 ]
