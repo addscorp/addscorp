@@ -38,7 +38,7 @@
             <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
                 ATLAS <span class="text-atlas-blue">Corporation</span>
             </h1>
-            <p class="mt-2 text-xl text-gray-400">Official Game Archive & Management</p>
+            <p class="mt-2 text-xl text-gray-400">Official Game Archive & Management (Firestore)</p>
         </header>
 
         <!-- Toggle Button -->
@@ -112,6 +112,7 @@
             <!-- Admin Content (Hidden until logged in) -->
             <div id="admin-content" class="hidden">
                 <h2 class="text-3xl font-bold text-atlas-blue mb-6 border-b border-gray-700 pb-2">New Game Submission</h2>
+                <div id="db-status-message" class="bg-yellow-800 text-yellow-200 p-3 rounded-lg mb-4 text-center hidden"></div>
 
                 <div class="space-y-6">
                     <!-- Date and Status Selector -->
@@ -187,6 +188,7 @@
         let auth;
         let userId = null;
         let currentView = 'archive'; // 'archive' or 'admin'
+        let isDbReady = false; // Flag to track if the DB connection is successful
         
         // Base path for Firestore documents
         const getCollectionPath = (uid) => `/artifacts/${appId}/users/${uid}/game_archive`;
@@ -216,11 +218,21 @@
         }
 
         async function initializeFirebase() {
+            const initialMessage = document.getElementById('initial-message');
+            const dbStatusMessage = document.getElementById('db-status-message');
+
             try {
                 // setLogLevel('debug'); // Uncomment to debug Firestore issues
                 
                 if (!firebaseConfig) {
-                    throw new Error("Firebase config not found. Cannot initialize application.");
+                    initialMessage.innerHTML = `
+                        <div class="text-xl font-bold text-red-400 mb-2">CRITICAL ERROR: Database Config Missing!</div>
+                        <div class="text-sm text-gray-400">The required <code>__firebase_config</code> was not provided by the environment.</div>
+                        <div class="text-sm text-gray-400 mt-1">Database features are disabled.</div>`;
+                    dbStatusMessage.textContent = "Database Disabled: Configuration Not Found.";
+                    dbStatusMessage.classList.remove('hidden');
+                    isDbReady = false;
+                    return;
                 }
 
                 const app = initializeApp(firebaseConfig);
@@ -236,18 +248,24 @@
                 }
                 
                 console.log("Firebase initialized successfully. User ID:", userId);
-                document.getElementById('initial-message').textContent = "Database connected. Select a date to view a match report.";
+                initialMessage.textContent = "Database connected. Select a date to view a match report.";
+                dbStatusMessage.classList.add('hidden'); // Hide status message on success
+                isDbReady = true;
 
                 // Set default date for archive view and admin portal
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('archiveDate').value = today;
                 document.getElementById('adminDate').value = today;
+                document.getElementById('viewGameBtn').disabled = false;
 
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
-                document.getElementById('initial-message').innerHTML = `
+                initialMessage.innerHTML = `
                     <p class="text-red-400 font-bold">Failed to connect to Database.</p>
-                    <p class="text-sm text-gray-500 mt-2">Check console for details.</p>`;
+                    <p class="text-sm text-gray-500 mt-2">Error: ${error.message}</p>`;
+                dbStatusMessage.textContent = `Database Disabled: Initialization Failed (${error.message}).`;
+                dbStatusMessage.classList.remove('hidden');
+                isDbReady = false;
             }
         }
         
@@ -303,8 +321,8 @@
 
         // --- Data Submission Logic (Admin Portal) ---
         async function parseAndSaveGame() {
-            if (!userId || !db) {
-                showNotification("Database connection not ready. Please wait.", 'error');
+            if (!isDbReady) {
+                showNotification("Database is not ready. Please check the error message.", 'error');
                 return;
             }
             if (!isAdminAuthenticated) {
@@ -349,24 +367,24 @@
 
             const dateDDMMYYYY = convertDateToDDMMYYYY(adminDateInput);
             
-            // Query for existing games on this date to determine the next ID
-            const q = query(collection(db, getCollectionPath(userId)), where("date", "==", dateDDMMYYYY));
-            const existingGamesSnapshot = await getDocs(q);
-            
-            // Generate the next game ID (DDMMYYYY-01, -02, etc.)
-            const nextGameIndex = existingGamesSnapshot.docs.length + 1;
-            const idBase = dateDDMMYYYY.replace(/\//g, '');
-            const newGameId = `${idBase}-${String(nextGameIndex).padStart(2, '0')}`; 
-
-            const newGame = {
-                id: newGameId,
-                date: dateDDMMYYYY,
-                status: statusInput,
-                entries: entries,
-                timestamp: Date.now()
-            };
-
             try {
+                // Query for existing games on this date to determine the next ID
+                const q = query(collection(db, getCollectionPath(userId)), where("date", "==", dateDDMMYYYY));
+                const existingGamesSnapshot = await getDocs(q);
+                
+                // Generate the next game ID (DDMMYYYY-01, -02, etc.)
+                const nextGameIndex = existingGamesSnapshot.docs.length + 1;
+                const idBase = dateDDMMYYYY.replace(/\//g, '');
+                const newGameId = `${idBase}-${String(nextGameIndex).padStart(2, '0')}`; 
+
+                const newGame = {
+                    id: newGameId,
+                    date: dateDDMMYYYY,
+                    status: statusInput,
+                    entries: entries,
+                    timestamp: Date.now()
+                };
+
                 // Use the game ID as the Firestore document ID for easy lookup
                 const docRef = doc(db, getCollectionPath(userId), newGameId);
                 await setDoc(docRef, newGame);
@@ -383,8 +401,8 @@
 
         // --- Data Display Logic (Archive View) ---
         async function showGame() {
-            if (!userId || !db) {
-                document.getElementById('game-results').innerHTML = `<p class="text-red-400 text-center py-16">Database connection pending or failed.</p>`;
+            if (!isDbReady) {
+                document.getElementById('game-results').innerHTML = `<p class="text-red-400 text-center py-16">Database connection failed. Check status above.</p>`;
                 return;
             }
 
@@ -407,7 +425,7 @@
                 const querySnapshot = await getDocs(q);
 
                 const gamesForDate = querySnapshot.docs.map(doc => doc.data());
-                gamesForDate.sort((a, b) => a.id.localeCompare(b.id)); // Sort by ID (time of entry)
+                gamesForDate.sort((a, b) => a.id.localeCompare(b.id)); // Sort by ID
 
                 resultsDiv.innerHTML = '';
                 
@@ -422,6 +440,8 @@
                 // Loop through all games found for the date and render them
                 gamesForDate.forEach((game) => {
                     const entries = game.entries || [];
+                    const rawStatus = game.status;
+                    const displayStatus = rawStatus ? rawStatus.replace(/_/g, ' ') : 'Status Not Recorded';
                     
                     let entryHTML = '';
 
@@ -472,7 +492,7 @@
                             <!-- Game Result Field (Visually separated at the bottom) -->
                             <div class="bg-gray-800 border-l-4 border-yellow-500 p-3 rounded-md mt-6 shadow-inner">
                                 <p class="font-bold text-yellow-300 text-lg mb-1">Game Result:</p>
-                                <p class="text-white text-md">${game.status.replace(/_/g, ' ')}</p>
+                                <p class="text-white text-md">${displayStatus}</p>
                             </div>
                         </div>`;
 
