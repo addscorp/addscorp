@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATLAS Corporation | Game Archive</title>
+    <title>ATLAS Corporation | Game Archive & Admin</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -23,6 +23,12 @@
         .text-atlas-blue {
             color: #2b6cb0; /* Tailwind blue-700 equivalent */
         }
+        .btn-primary {
+            @apply w-full sm:w-auto px-6 py-3 text-lg font-semibold rounded-lg text-white bg-atlas-blue hover:bg-blue-700 transition duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] disabled:opacity-50;
+        }
+        .input-style {
+            @apply p-3 text-lg rounded-lg border-2 border-gray-600 bg-gray-700 text-white focus:outline-none focus:border-atlas-blue transition w-full;
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 sm:p-8">
@@ -32,41 +38,125 @@
             <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
                 ATLAS <span class="text-atlas-blue">Corporation</span>
             </h1>
-            <p class="mt-2 text-xl text-gray-400">Official Game Archive</p>
+            <p class="mt-2 text-xl text-gray-400">Official Game Archive & Management</p>
         </header>
 
-
-        <!-- Date Picker Section -->
-        <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
-            <label for="gameDate" class="text-lg font-medium text-gray-300">
-                Select Game Date:
-            </label>
-            <input 
-                type="date" 
-                id="gameDate" 
-                class="p-3 text-lg rounded-lg border-2 border-gray-600 bg-gray-700 text-white focus:outline-none focus:border-atlas-blue transition w-full sm:w-auto"
-            >
-            <button 
-                id="viewGameBtn" 
-                class="w-full sm:w-auto px-6 py-3 text-lg font-semibold rounded-lg text-white bg-atlas-blue hover:bg-blue-700 transition duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] disabled:opacity-50"
-                onclick="showGame()"
-                disabled 
-            >
-                View Game
+        <!-- Toggle Button -->
+        <div class="mb-6 text-center">
+            <button id="togglePortalBtn" onclick="toggleView()" class="px-4 py-2 text-sm font-semibold rounded-lg text-white bg-gray-600 hover:bg-gray-500 transition duration-300">
+                Switch to Admin Portal
             </button>
         </div>
 
+        <!-- Notification Area -->
+        <div id="notification-area" class="mb-4 hidden p-3 rounded-lg text-center font-semibold transition-all duration-300"></div>
 
-        <!-- Game Results Display Area -->
-        <section class="mt-8">
-            <h2 class="text-2xl font-bold text-gray-300 mb-4 border-b border-gray-700 pb-2">Match Report</h2>
-            <div id="game-results" class="bg-gray-700 p-4 rounded-lg min-h-[250px] max-h-[500px] overflow-y-auto scrollable-results">
-                <p id="initial-message" class="text-gray-400 text-center py-16">
-                    Loading ATLAS Corporation archive data...
-                </p>
+        <!-- -------------------- ARCHIVE VIEW -------------------- -->
+        <div id="archive-view">
+            <!-- Date Picker Section -->
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
+                <label for="gameDate" class="text-lg font-medium text-gray-300">
+                    Select Game Date:
+                </label>
+                <input 
+                    type="date" 
+                    id="archiveDate" 
+                    class="input-style w-full sm:w-auto"
+                >
+                <button 
+                    id="viewGameBtn" 
+                    class="btn-primary"
+                    onclick="showGame()"
+                >
+                    View Game
+                </button>
             </div>
-        </section>
 
+            <!-- Game Results Display Area -->
+            <section class="mt-8">
+                <h2 class="text-2xl font-bold text-gray-300 mb-4 border-b border-gray-700 pb-2">Match Report</h2>
+                <div id="game-results" class="bg-gray-700 p-4 rounded-lg min-h-[250px] max-h-[500px] overflow-y-auto scrollable-results">
+                    <p id="initial-message" class="text-gray-400 text-center py-16">
+                        Initializing connection to ATLAS Corporation database...
+                    </p>
+                </div>
+            </section>
+        </div>
+
+        <!-- -------------------- ADMIN PORTAL -------------------- -->
+        <div id="admin-portal" class="hidden">
+            <h2 class="text-3xl font-bold text-atlas-blue mb-6 border-b border-gray-700 pb-2">Admin Access Required</h2>
+            
+            <!-- Login Form Container -->
+            <div id="login-form-container" class="max-w-md mx-auto p-6 bg-gray-700 rounded-lg shadow-xl">
+                <p class="text-gray-300 mb-4 text-center">Please enter your administrative credentials.</p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="adminUsername" class="block text-sm font-medium text-gray-400 mb-1">Username</label>
+                        <input type="text" id="adminUsername" class="input-style" placeholder="atlasadmin">
+                    </div>
+                    <div>
+                        <label for="adminPassword" class="block text-sm font-medium text-gray-400 mb-1">Password</label>
+                        <input type="password" id="adminPassword" class="input-style" placeholder="password">
+                    </div>
+                    <button 
+                        id="loginBtn" 
+                        class="btn-primary !bg-gray-600 hover:!bg-gray-500"
+                        onclick="handleLogin()"
+                    >
+                        Log In
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Content (Hidden until logged in) -->
+            <div id="admin-content" class="hidden">
+                <h2 class="text-3xl font-bold text-atlas-blue mb-6 border-b border-gray-700 pb-2">New Game Submission</h2>
+
+                <div class="space-y-6">
+                    <!-- Date and Status Selector -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="adminDate" class="block text-sm font-medium text-gray-400 mb-1">Game Date</label>
+                            <input type="date" id="adminDate" class="input-style">
+                        </div>
+                        <div>
+                            <label for="gameStatus" class="block text-sm font-medium text-gray-400 mb-1">Game Status</label>
+                            <select id="gameStatus" class="input-style h-[48px]">
+                                <option value="AG_WINS">AG Wins</option>
+                                <option value="DJ_WINS">DJ Wins</option>
+                                <option value="DD_WINS">DD Wins</option>
+                                <option value="ASA_WINS">ASA Wins</option>
+                                <option value="DDA_WINS">DDA Wins</option>
+                                <option value="DRAW">Draw</option>
+                                <option value="IN_PROGRESS" selected>In Progress</option>
+                                <option value="ABANDONED">Abandoned</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Raw Entry Input -->
+                    <div>
+                        <label for="rawEntries" class="block text-sm font-medium text-gray-400 mb-1">Paste Entries Here (e.g., Singapore (AG), England (DJ))</label>
+                        <textarea 
+                            id="rawEntries" 
+                            rows="12" 
+                            placeholder="Enter entries, one per line, followed by the player code in parentheses.&#10;Example:&#10;Singapore (AG)&#10;England (DJ)&#10;Dharwad (AG)"
+                            class="input-style h-auto resize-y font-mono text-sm"
+                        ></textarea>
+                    </div>
+
+                    <!-- Save Button -->
+                    <button 
+                        id="saveGameBtn" 
+                        class="btn-primary !bg-green-600 hover:!bg-green-700"
+                        onclick="parseAndSaveGame()"
+                    >
+                        Parse and Save Game
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Footer / Instructions -->
         <footer class="mt-10 pt-4 border-t border-gray-700 text-center text-sm text-gray-500">
@@ -76,180 +166,332 @@
     </div>
 
 
-    <script>
-        let ATLAS_ARCHIVE = null; // Variable to hold the fetched JSON data (an array of games)
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, doc, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Admin Login Config ---
+        const ADMIN_USER = 'atlasadmin';
+        const ADMIN_PASS = 'gamecorp';
+        let isAdminAuthenticated = false;
 
+        // --- Firebase Setup ---
+        
+        // Use environment variables for secure setup
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Converts YYYY-MM-DD (from input) to DD/MM/YYYY (for comparison/display)
+        let db;
+        let auth;
+        let userId = null;
+        let currentView = 'archive'; // 'archive' or 'admin'
+        
+        // Base path for Firestore documents
+        const getCollectionPath = (uid) => `/artifacts/${appId}/users/${uid}/game_archive`;
+
+        // Utility to convert YYYY-MM-DD to DD/MM/YYYY
         function convertDateToDDMMYYYY(dateString) {
             if (!dateString) return null;
-            const parts = dateString.split('-'); // e.g., ["2025", "10", "15"]
+            const parts = dateString.split('-'); 
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
         
-        // --- Data Loading Function ---
-        async function loadArchiveData() {
-            const resultsDiv = document.getElementById('game-results');
-            const viewBtn = document.getElementById('viewGameBtn');
-            const initialMessage = document.getElementById('initial-message');
-
-
-            viewBtn.disabled = true;
-            initialMessage.classList.add('animate-pulse');
-
-
-            try {
-                // Fetch the data from the relative path
-                const response = await fetch('game_archive.json');
-
-
-                if (!response.ok) {
-                    // Check for HTTP errors (like 404 Not Found)
-                    throw new Error(`HTTP Error: ${response.status} (${response.statusText})`);
-                }
-
-
-                // Attempt to parse the JSON
-                ATLAS_ARCHIVE = await response.json();
-                
-                // Success
-                initialMessage.textContent = "Archive loaded successfully. Select a date to view a match report.";
-                initialMessage.classList.remove('animate-pulse');
-                viewBtn.disabled = false;
-                
-            } catch (error) {
-                // Failure - Display the error details
-                console.error("Failed to load game archive data. Details:", error);
-                
-                resultsDiv.innerHTML = `
-                    <div class="text-center py-12">
-                        <p class="text-xl font-bold text-red-500 mb-2">Error Loading Archive!</p>
-                        <p class="text-gray-300">Could not fetch or parse <code>game_archive.json</code>.</p>
-                        <p class="text-sm text-gray-500 mt-2">
-                            **Debugging Tip:** Check your GitHub repository to ensure 
-                            both files are in the same location, and the JSON file is valid.
-                        </p>
-                        <p class="text-xs text-gray-500 mt-1">Error Details: ${error.message}</p>
-                    </div>`;
+        // Simple notification handler
+        function showNotification(message, type = 'info') {
+            const area = document.getElementById('notification-area');
+            area.textContent = message;
+            area.className = 'mb-4 p-3 rounded-lg text-center font-semibold transition-all duration-300 block';
+            
+            if (type === 'success') {
+                area.classList.add('bg-green-500', 'text-white');
+            } else if (type === 'error') {
+                area.classList.add('bg-red-500', 'text-white');
+            } else {
+                area.classList.add('bg-blue-500', 'text-white');
             }
+            
+            setTimeout(() => area.classList.add('hidden'), 5000);
         }
 
+        async function initializeFirebase() {
+            try {
+                // setLogLevel('debug'); // Uncomment to debug Firestore issues
+                
+                if (!firebaseConfig) {
+                    throw new Error("Firebase config not found. Cannot initialize application.");
+                }
 
-        // --- Core Logic Function to Display Games ---
-        function showGame() {
-            if (!ATLAS_ARCHIVE) return; // Safeguard if data isn't loaded
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (initialAuthToken) {
+                    const userCredential = await signInWithCustomToken(auth, initialAuthToken);
+                    userId = userCredential.user.uid;
+                } else {
+                    const userCredential = await signInAnonymously(auth);
+                    userId = userCredential.user.uid;
+                }
+                
+                console.log("Firebase initialized successfully. User ID:", userId);
+                document.getElementById('initial-message').textContent = "Database connected. Select a date to view a match report.";
+
+                // Set default date for archive view and admin portal
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('archiveDate').value = today;
+                document.getElementById('adminDate').value = today;
+
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                document.getElementById('initial-message').innerHTML = `
+                    <p class="text-red-400 font-bold">Failed to connect to Database.</p>
+                    <p class="text-sm text-gray-500 mt-2">Check console for details.</p>`;
+            }
+        }
+        
+        // --- Admin Login Logic ---
+        function handleLogin() {
+            const usernameInput = document.getElementById('adminUsername').value;
+            const passwordInput = document.getElementById('adminPassword').value;
+
+            if (usernameInput === ADMIN_USER && passwordInput === ADMIN_PASS) {
+                isAdminAuthenticated = true;
+                document.getElementById('login-form-container').classList.add('hidden');
+                document.getElementById('admin-content').classList.remove('hidden');
+                showNotification("Welcome back, Admin!", 'success');
+            } else {
+                showNotification("Login failed. Invalid credentials.", 'error');
+            }
+        }
+        window.handleLogin = handleLogin; // Expose to HTML
 
 
-            const dateInput = document.getElementById('gameDate');
+        // --- View Toggling ---
+        function toggleView() {
+            const archive = document.getElementById('archive-view');
+            const admin = document.getElementById('admin-portal');
+            const btn = document.getElementById('togglePortalBtn');
+
+            if (currentView === 'archive') {
+                // Switching to Admin view
+                archive.classList.add('hidden');
+                admin.classList.remove('hidden');
+                btn.textContent = 'Switch to Archive View';
+                currentView = 'admin';
+
+                // Check authentication state
+                if (isAdminAuthenticated) {
+                    document.getElementById('login-form-container').classList.add('hidden');
+                    document.getElementById('admin-content').classList.remove('hidden');
+                } else {
+                    document.getElementById('login-form-container').classList.remove('hidden');
+                    document.getElementById('admin-content').classList.add('hidden');
+                }
+
+            } else {
+                // Switching to Archive view
+                admin.classList.add('hidden');
+                archive.classList.remove('hidden');
+                btn.textContent = 'Switch to Admin Portal';
+                currentView = 'archive';
+                showGame(); // Refresh the archive data view
+            }
+        }
+        window.toggleView = toggleView; // Expose to HTML
+
+        // --- Data Submission Logic (Admin Portal) ---
+        async function parseAndSaveGame() {
+            if (!userId || !db) {
+                showNotification("Database connection not ready. Please wait.", 'error');
+                return;
+            }
+            if (!isAdminAuthenticated) {
+                showNotification("Admin access required to save games.", 'error');
+                return;
+            }
+
+            const adminDateInput = document.getElementById('adminDate').value;
+            const statusInput = document.getElementById('gameStatus').value;
+            const rawEntriesInput = document.getElementById('rawEntries').value.trim();
+
+            if (!adminDateInput || !rawEntriesInput) {
+                showNotification("Please enter a Date and Game Entries.", 'error');
+                return;
+            }
+
+            const lines = rawEntriesInput.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            const entries = [];
+            // Regex to find player codes like (AG), (DJ), (DD), (ASA), (DDA), etc.
+            const playerRegex = /\s*\(([A-Z]+)\)$/; 
+
+            for (const line of lines) {
+                const match = line.match(playerRegex);
+
+                if (match) {
+                    const playerCode = match[1]; 
+                    const entryName = line.replace(playerRegex, '').trim();
+
+                    entries.push({
+                        entry: entryName,
+                        player: playerCode
+                    });
+                } else {
+                    showNotification(`Skipping invalid line: "${line}" (Missing player code like (AG))`, 'error');
+                }
+            }
+
+            if (entries.length === 0) {
+                showNotification("No valid entries found after parsing.", 'error');
+                return;
+            }
+
+            const dateDDMMYYYY = convertDateToDDMMYYYY(adminDateInput);
+            
+            // Query for existing games on this date to determine the next ID
+            const q = query(collection(db, getCollectionPath(userId)), where("date", "==", dateDDMMYYYY));
+            const existingGamesSnapshot = await getDocs(q);
+            
+            // Generate the next game ID (DDMMYYYY-01, -02, etc.)
+            const nextGameIndex = existingGamesSnapshot.docs.length + 1;
+            const idBase = dateDDMMYYYY.replace(/\//g, '');
+            const newGameId = `${idBase}-${String(nextGameIndex).padStart(2, '0')}`; 
+
+            const newGame = {
+                id: newGameId,
+                date: dateDDMMYYYY,
+                status: statusInput,
+                entries: entries,
+                timestamp: Date.now()
+            };
+
+            try {
+                // Use the game ID as the Firestore document ID for easy lookup
+                const docRef = doc(db, getCollectionPath(userId), newGameId);
+                await setDoc(docRef, newGame);
+
+                showNotification(`Game ID ${newGameId} saved successfully!`, 'success');
+                document.getElementById('rawEntries').value = ''; // Clear input
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showNotification(`Error saving game: ${e.message}`, 'error');
+            }
+        }
+        window.parseAndSaveGame = parseAndSaveGame; // Expose to HTML
+
+
+        // --- Data Display Logic (Archive View) ---
+        async function showGame() {
+            if (!userId || !db) {
+                document.getElementById('game-results').innerHTML = `<p class="text-red-400 text-center py-16">Database connection pending or failed.</p>`;
+                return;
+            }
+
+            const dateInput = document.getElementById('archiveDate');
             const resultsDiv = document.getElementById('game-results');
             const dateValue = dateInput.value; // YYYY-MM-DD format
 
-
-            resultsDiv.innerHTML = '';
+            resultsDiv.innerHTML = '<p class="text-gray-400 text-center py-16">Searching database...</p>';
             
             if (!dateValue) {
                 resultsDiv.innerHTML = '<p class="text-red-400 text-center py-16">Please select a valid date to view the game.</p>';
                 return;
             }
 
-
             const searchDateDDMMYYYY = convertDateToDDMMYYYY(dateValue);
 
+            try {
+                const gamesCollection = collection(db, getCollectionPath(userId));
+                const q = query(gamesCollection, where("date", "==", searchDateDDMMYYYY));
+                const querySnapshot = await getDocs(q);
 
-            // Filter all games that match the selected date (DD/MM/YYYY)
-            const gamesForDate = ATLAS_ARCHIVE.filter(game => game.date === searchDateDDMMYYYY);
+                const gamesForDate = querySnapshot.docs.map(doc => doc.data());
+                gamesForDate.sort((a, b) => a.id.localeCompare(b.id)); // Sort by ID (time of entry)
 
-
-            if (gamesForDate.length === 0) {
-                resultsDiv.innerHTML = `
-                    <p class="text-gray-400 text-center py-16">
-                        No official ATLAS Corporation games were recorded for <span class="font-bold text-white">${searchDateDDMMYYYY}</span>.
-                    </p>`;
-                return;
-            }
-
-
-            // Loop through all games found for the date and render them
-            gamesForDate.forEach((game) => {
-                const entries = game.entries;
-                const status = game.status;
+                resultsDiv.innerHTML = '';
                 
-                let entryHTML = '';
-
-
-                // 1. Generate the list of entries
-                if (entries.length > 0) {
-                    entryHTML = `
-                        <ul class="space-y-3 mt-4 px-1">
-                            ${entries.map((item, entryIndex) => {
-                                const neutralBorder = 'border-atlas-blue'; 
-                                const neutralPlayerBg = 'bg-gray-600';
-                                
-                                return `
-                                    <li class="p-3 bg-gray-800 rounded-lg shadow-md border-l-4 ${neutralBorder}">
-                                        <div class="flex justify-between items-center">
-                                            <!-- Entry Content with sequential number -->
-                                            <span class="text-white text-lg font-semibold">
-                                                ${entryIndex + 1}. ${item.entry}
-                                            </span>
-                                            
-                                            <!-- Player Badge (A or D) -->
-                                            <span class="text-sm font-bold w-6 h-6 leading-6 text-center rounded-full text-white ${neutralPlayerBg} shadow-inner">
-                                                ${item.player}
-                                            </span>
-                                        </div>
-                                    </li>
-                                `;
-                            }).join('')}
-                        </ul>`;
-                } else {
-                     entryHTML = `<p class="text-gray-400 text-center py-2 text-sm">No entries have been recorded yet for this game.</p>`;
+                if (gamesForDate.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <p class="text-gray-400 text-center py-16">
+                            No official ATLAS Corporation games were recorded for <span class="font-bold text-white">${searchDateDDMMYYYY}</span>.
+                        </p>`;
+                    return;
                 }
 
+                // Loop through all games found for the date and render them
+                gamesForDate.forEach((game) => {
+                    const entries = game.entries || [];
+                    
+                    let entryHTML = '';
 
-                // 2. Generate the Game Card for this match
-                const gameCard = `
-                    <div class="bg-gray-700 p-4 rounded-lg shadow-xl mb-6">
-                        <div class="flex justify-between items-start border-b border-gray-600 pb-2 mb-3">
-                            <div>
-                                <!-- Updated Title using only the ID -->
-                                <h3 class="font-extrabold text-white text-xl">Game Report: <span class="text-atlas-blue">${game.id}</span></h3>
+                    // 1. Generate the list of entries
+                    if (entries.length > 0) {
+                        entryHTML = `
+                            <ul class="space-y-3 mt-4 px-1">
+                                ${entries.map((item, entryIndex) => {
+                                    const neutralBorder = 'border-atlas-blue'; 
+                                    const neutralPlayerBg = 'bg-gray-600';
+                                    
+                                    return `
+                                        <li class="p-3 bg-gray-800 rounded-lg shadow-md border-l-4 ${neutralBorder}">
+                                            <div class="flex justify-between items-center">
+                                                <!-- Entry Content with sequential number -->
+                                                <span class="text-white text-lg font-semibold">
+                                                    ${entryIndex + 1}. ${item.entry}
+                                                </span>
+                                                
+                                                <!-- Player Badge -->
+                                                <span class="text-sm font-bold py-1 px-3 rounded text-white ${neutralPlayerBg} shadow-inner">
+                                                    ${item.player}
+                                                </span>
+                                            </div>
+                                        </li>
+                                    `;
+                                }).join('')}
+                            </ul>`;
+                    } else {
+                         entryHTML = `<p class="text-gray-400 text-center py-2 text-sm">No entries have been recorded yet for this game.</p>`;
+                    }
+
+                    // 2. Generate the Game Card for this match
+                    const gameCard = `
+                        <div class="bg-gray-700 p-4 rounded-lg shadow-xl mb-6">
+                            <div class="flex justify-between items-start border-b border-gray-600 pb-2 mb-3">
+                                <div>
+                                    <h3 class="font-extrabold text-white text-xl">Game Report: <span class="text-atlas-blue">${game.id}</span></h3>
+                                </div>
+                                <span class="text-sm text-gray-300 bg-gray-600 py-1 px-3 rounded-full">${game.date}</span>
                             </div>
-                            <span class="text-sm text-gray-300 bg-gray-600 py-1 px-3 rounded-full">${game.date}</span>
-                        </div>
-                        
-                        <p class="font-bold text-gray-300 text-lg border-b border-gray-700 pb-1 mb-2">Game Entries:</p>
-                        
-                        <!-- Entries List -->
-                        ${entryHTML}
-                        
-                        <!-- Game Result Field (Visually separated at the bottom) -->
-                        <div class="bg-gray-800 border-l-4 border-yellow-500 p-3 rounded-md mt-6 shadow-inner">
-                            <p class="font-bold text-yellow-300 text-lg mb-1">Game Result:</p>
-                            <p class="text-white text-md">${status}</p>
-                        </div>
-                    </div>`;
+                            
+                            <p class="font-bold text-gray-300 text-lg border-b border-gray-700 pb-1 mb-2">Game Entries:</p>
+                            
+                            <!-- Entries List -->
+                            ${entryHTML}
+                            
+                            <!-- Game Result Field (Visually separated at the bottom) -->
+                            <div class="bg-gray-800 border-l-4 border-yellow-500 p-3 rounded-md mt-6 shadow-inner">
+                                <p class="font-bold text-yellow-300 text-lg mb-1">Game Result:</p>
+                                <p class="text-white text-md">${game.status.replace(/_/g, ' ')}</p>
+                            </div>
+                        </div>`;
 
-
-                resultsDiv.innerHTML += gameCard;
-            });
+                    resultsDiv.innerHTML += gameCard;
+                });
+            } catch (error) {
+                console.error("Error fetching games:", error);
+                resultsDiv.innerHTML = `<p class="text-red-400 text-center py-16">Error retrieving data from database.</p>`;
+            }
         }
+        window.showGame = showGame; // Expose to HTML
 
 
-        // Set the default date to today and start loading the archive data
+        // --- Initialization on Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Set input default to today's date (YYYY-MM-DD format required by <input type="date">)
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('gameDate').value = today;
-            
-            // Start loading the data immediately
-            loadArchiveData(); 
+            initializeFirebase(); 
         });
-
 
     </script>
 </body>
 </html>
-
-
 
