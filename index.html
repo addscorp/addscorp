@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATLAS Corporation | Game Archive & Admin</title>
+    <title>ATLAS Corporation | Game Archive & Admin (Cloud Sync)</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -38,7 +38,7 @@
             <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
                 ATLAS <span class="text-atlas-blue">Corporation</span>
             </h1>
-            <p class="mt-2 text-xl text-gray-400">Official Game Archive & Management (Firestore)</p>
+            <p class="mt-2 text-xl text-gray-400">Official Game Archive & Management (Cross-Device Sync)</p>
         </header>
 
         <!-- Toggle Button -->
@@ -55,7 +55,7 @@
         <div id="archive-view">
             <!-- Date Picker Section -->
             <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
-                <label for="gameDate" class="text-lg font-medium text-gray-300">
+                <label for="archiveDate" class="text-lg font-medium text-gray-300">
                     Select Game Date:
                 </label>
                 <input 
@@ -77,7 +77,7 @@
                 <h2 class="text-2xl font-bold text-gray-300 mb-4 border-b border-gray-700 pb-2">Match Report</h2>
                 <div id="game-results" class="bg-gray-700 p-4 rounded-lg min-h-[250px] max-h-[500px] overflow-y-auto scrollable-results">
                     <p id="initial-message" class="text-gray-400 text-center py-16">
-                        Initializing connection to ATLAS Corporation database...
+                        Initializing connection to ATLAS Corporation cloud database...
                     </p>
                 </div>
             </section>
@@ -169,7 +169,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, getDocs, doc, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Admin Login Config ---
@@ -179,10 +179,10 @@
 
         // --- Firebase Setup ---
         
-        // Use environment variables for secure setup
+        // MANDATORY environment variables for secure setup
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Not using custom token for simplicity/reliability
 
         let db;
         let auth;
@@ -190,8 +190,8 @@
         let currentView = 'archive'; // 'archive' or 'admin'
         let isDbReady = false; // Flag to track if the DB connection is successful
         
-        // Base path for Firestore documents
-        const getCollectionPath = (uid) => `/artifacts/${appId}/users/${uid}/game_archive`;
+        // CRITICAL: Public data path for cross-device sync
+        const PUBLIC_COLLECTION_PATH = `/artifacts/${appId}/public/data/game_archive`;
 
         // Utility to convert YYYY-MM-DD to DD/MM/YYYY
         function convertDateToDDMMYYYY(dateString) {
@@ -220,7 +220,7 @@
         async function initializeFirebase() {
             const initialMessage = document.getElementById('initial-message');
             const dbStatusMessage = document.getElementById('db-status-message');
-
+            
             try {
                 // setLogLevel('debug'); // Uncomment to debug Firestore issues
                 
@@ -228,8 +228,8 @@
                     initialMessage.innerHTML = `
                         <div class="text-xl font-bold text-red-400 mb-2">CRITICAL ERROR: Database Config Missing!</div>
                         <div class="text-sm text-gray-400">The required <code>__firebase_config</code> was not provided by the environment.</div>
-                        <div class="text-sm text-gray-400 mt-1">Database features are disabled.</div>`;
-                    dbStatusMessage.textContent = "Database Disabled: Configuration Not Found.";
+                        <div class="text-sm text-yellow-300 mt-1">Cross-device sync is **DISABLED**. Please resolve environment issues.</div>`;
+                    dbStatusMessage.textContent = "Database Disabled: Cross-device sync FAILED.";
                     dbStatusMessage.classList.remove('hidden');
                     isDbReady = false;
                     return;
@@ -238,17 +238,13 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-
-                if (initialAuthToken) {
-                    const userCredential = await signInWithCustomToken(auth, initialAuthToken);
-                    userId = userCredential.user.uid;
-                } else {
-                    const userCredential = await signInAnonymously(auth);
-                    userId = userCredential.user.uid;
-                }
+                
+                // Use anonymous sign-in to guarantee a user ID for security rules
+                const userCredential = await signInAnonymously(auth);
+                userId = userCredential.user.uid;
                 
                 console.log("Firebase initialized successfully. User ID:", userId);
-                initialMessage.textContent = "Database connected. Select a date to view a match report.";
+                initialMessage.textContent = "Cloud database connected. Select a date to view a match report.";
                 dbStatusMessage.classList.add('hidden'); // Hide status message on success
                 isDbReady = true;
 
@@ -262,7 +258,8 @@
                 console.error("Firebase Initialization Error:", error);
                 initialMessage.innerHTML = `
                     <p class="text-red-400 font-bold">Failed to connect to Database.</p>
-                    <p class="text-sm text-gray-500 mt-2">Error: ${error.message}</p>`;
+                    <p class="text-sm text-gray-500 mt-2">Error: ${error.message}</p>
+                    <div class="text-sm text-yellow-300 mt-1">Cross-device sync is **DISABLED**.</div>`;
                 dbStatusMessage.textContent = `Database Disabled: Initialization Failed (${error.message}).`;
                 dbStatusMessage.classList.remove('hidden');
                 isDbReady = false;
@@ -278,7 +275,7 @@
                 isAdminAuthenticated = true;
                 document.getElementById('login-form-container').classList.add('hidden');
                 document.getElementById('admin-content').classList.remove('hidden');
-                showNotification("Welcome back, Admin!", 'success');
+                showNotification("Welcome back, Admin! Cloud database status check below.", 'success');
             } else {
                 showNotification("Login failed. Invalid credentials.", 'error');
             }
@@ -313,7 +310,6 @@
                 admin.classList.add('hidden');
                 archive.classList.remove('hidden');
                 btn.textContent = 'Switch to Admin Portal';
-                currentView = 'archive';
                 showGame(); // Refresh the archive data view
             }
         }
@@ -322,7 +318,7 @@
         // --- Data Submission Logic (Admin Portal) ---
         async function parseAndSaveGame() {
             if (!isDbReady) {
-                showNotification("Database is not ready. Please check the error message.", 'error');
+                showNotification("Database is not ready. Cross-device sync is DISABLED.", 'error');
                 return;
             }
             if (!isAdminAuthenticated) {
@@ -369,7 +365,7 @@
             
             try {
                 // Query for existing games on this date to determine the next ID
-                const q = query(collection(db, getCollectionPath(userId)), where("date", "==", dateDDMMYYYY));
+                const q = query(collection(db, PUBLIC_COLLECTION_PATH), where("date", "==", dateDDMMYYYY));
                 const existingGamesSnapshot = await getDocs(q);
                 
                 // Generate the next game ID (DDMMYYYY-01, -02, etc.)
@@ -386,14 +382,14 @@
                 };
 
                 // Use the game ID as the Firestore document ID for easy lookup
-                const docRef = doc(db, getCollectionPath(userId), newGameId);
+                const docRef = doc(db, PUBLIC_COLLECTION_PATH, newGameId);
                 await setDoc(docRef, newGame);
 
-                showNotification(`Game ID ${newGameId} saved successfully!`, 'success');
+                showNotification(`Game ID ${newGameId} saved successfully to cloud!`, 'success');
                 document.getElementById('rawEntries').value = ''; // Clear input
             } catch (e) {
                 console.error("Error adding document: ", e);
-                showNotification(`Error saving game: ${e.message}`, 'error');
+                showNotification(`Error saving game to cloud: ${e.message}`, 'error');
             }
         }
         window.parseAndSaveGame = parseAndSaveGame; // Expose to HTML
@@ -402,7 +398,7 @@
         // --- Data Display Logic (Archive View) ---
         async function showGame() {
             if (!isDbReady) {
-                document.getElementById('game-results').innerHTML = `<p class="text-red-400 text-center py-16">Database connection failed. Check status above.</p>`;
+                document.getElementById('game-results').innerHTML = `<p class="text-red-400 text-center py-16">Database connection failed. Check the critical error message above.</p>`;
                 return;
             }
 
@@ -410,7 +406,7 @@
             const resultsDiv = document.getElementById('game-results');
             const dateValue = dateInput.value; // YYYY-MM-DD format
 
-            resultsDiv.innerHTML = '<p class="text-gray-400 text-center py-16">Searching database...</p>';
+            resultsDiv.innerHTML = '<p class="text-gray-400 text-center py-16">Searching cloud database...</p>';
             
             if (!dateValue) {
                 resultsDiv.innerHTML = '<p class="text-red-400 text-center py-16">Please select a valid date to view the game.</p>';
@@ -420,7 +416,7 @@
             const searchDateDDMMYYYY = convertDateToDDMMYYYY(dateValue);
 
             try {
-                const gamesCollection = collection(db, getCollectionPath(userId));
+                const gamesCollection = collection(db, PUBLIC_COLLECTION_PATH);
                 const q = query(gamesCollection, where("date", "==", searchDateDDMMYYYY));
                 const querySnapshot = await getDocs(q);
 
@@ -500,7 +496,7 @@
                 });
             } catch (error) {
                 console.error("Error fetching games:", error);
-                resultsDiv.innerHTML = `<p class="text-red-400 text-center py-16">Error retrieving data from database.</p>`;
+                resultsDiv.innerHTML = `<p class="text-red-400 text-center py-16">Error retrieving data from cloud database.</p>`;
             }
         }
         window.showGame = showGame; // Expose to HTML
