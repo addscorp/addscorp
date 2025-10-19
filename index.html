@@ -180,7 +180,7 @@
         // !!! PASTE YOUR VALIDATED CREDENTIALS HERE !!!
         // This is the only part you need to edit to auto-load your data.
         // =========================================================================
-        const HARDCODED_URL = "https://api.jsonbin.io/v3/b/68f3dc64d0ea881f40aa8741"; 
+        const HARDCODED_URL = "https://api.jsonbin.io/b3/b/68f3dc64d0ea881f40aa8741"; 
         const HARDCODED_KEY = "$2a$10$zqLmCEPiBb8GMRjxY1ATEupOlfjxD1zAqFEeyC/ZZwuon0o0t1Ip2"; 
         // =========================================================================
         
@@ -266,18 +266,21 @@
             const viewBtn = document.getElementById('viewGameBtn');
             const initialMessage = document.getElementById('initial-message');
 
-            viewBtn.disabled = true;
-            initialMessage.classList.add('animate-pulse');
+            // Bug fix: Check if elements exist before interacting with them
+            if (viewBtn) viewBtn.disabled = true;
+            if (initialMessage) initialMessage.classList.add('animate-pulse');
 
             const url = HARDCODED_URL;
             const key = HARDCODED_KEY;
 
             if (!url.startsWith('https://') || key.length < 10) {
-                 resultsDiv.innerHTML = `
-                    <div class="text-center py-12">
-                        <p class="text-xl font-bold text-red-500 mb-2">Configuration Required!</p>
-                        <p class="text-gray-300">Please provide your valid <code>HARDCODED_URL</code> and <code>HARDCODED_KEY</code> in the script block.</p>
-                    </div>`;
+                 if (resultsDiv) {
+                     resultsDiv.innerHTML = `
+                        <div class="text-center py-12">
+                            <p class="text-xl font-bold text-red-500 mb-2">Configuration Required!</p>
+                            <p class="text-gray-300">Please provide your valid <code>HARDCODED_URL</code> and <code>HARDCODED_KEY</code> in the script block.</p>
+                        </div>`;
+                 }
                 return;
             }
 
@@ -299,20 +302,24 @@
                 
                 ATLAS_ARCHIVE = Array.isArray(data) ? data : [];
                 
-                initialMessage.textContent = "Archive loaded successfully. Select a date to view a match report.";
-                initialMessage.classList.remove('animate-pulse');
-                viewBtn.disabled = false;
+                if (initialMessage) {
+                    initialMessage.textContent = "Archive loaded successfully. Select a date to view a match report.";
+                    initialMessage.classList.remove('animate-pulse');
+                }
+                if (viewBtn) viewBtn.disabled = false;
                 showNotification('Archive Loaded from JSONBin', 'success');
                 
             } catch (error) {
                 console.error("Failed to load game archive data. Details:", error);
                 
-                resultsDiv.innerHTML = `
-                    <div class="text-center py-12">
-                        <p class="text-xl font-bold text-red-500 mb-2">Error Loading Archive!</p>
-                        <p class="text-gray-300">Could not connect to JSONBin.</p>
-                        <p class="text-xs text-gray-500 mt-1">Error Details: ${error.message}</p>
-                    </div>`;
+                if (resultsDiv) {
+                    resultsDiv.innerHTML = `
+                        <div class="text-center py-12">
+                            <p class="text-xl font-bold text-red-500 mb-2">Error Loading Archive!</p>
+                            <p class="text-gray-300">Could not connect to JSONBin.</p>
+                            <p class="text-xs text-gray-500 mt-1">Error Details: ${error.message}</p>
+                        </div>`;
+                }
                 showNotification('Data Load Failed', 'error');
             }
         }
@@ -393,6 +400,11 @@
 
             // 3. Check for existing game (e.g., same date) and replace or append
             // Note: We check against the already converted DD/MM/YYYY date
+            // Handle case where ATLAS_ARCHIVE might be null (though loadArchiveData tries to initialize it)
+            if (!ATLAS_ARCHIVE) {
+                ATLAS_ARCHIVE = [];
+            }
+
             const existingIndex = ATLAS_ARCHIVE.findIndex(game => game.date === formattedDate);
 
             if (existingIndex !== -1) {
@@ -413,6 +425,8 @@
             const dateInput = document.getElementById('gameDate');
             const resultsDiv = document.getElementById('game-results');
             const dateValue = dateInput.value; // YYYY-MM-DD format
+
+            if (!resultsDiv) return;
 
             resultsDiv.innerHTML = '';
             
