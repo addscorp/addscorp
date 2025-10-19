@@ -266,6 +266,7 @@
             const viewBtn = document.getElementById('viewGameBtn');
             const initialMessage = document.getElementById('initial-message');
 
+            // Bug fix: Check if elements exist before interacting with them (for async calls)
             if (viewBtn) viewBtn.disabled = true;
             if (initialMessage) initialMessage.classList.add('animate-pulse');
 
@@ -284,13 +285,6 @@
                 return;
             }
 
-            // --- ENHANCED DEBUGGING LOGGING ---
-            console.log("--- JSONBIN DEBUG START ---");
-            console.log("Attempting to fetch data.");
-            // Log the URL structure (anonymizing the key for security)
-            console.log("URL Used (v3 format expected):", url);
-            console.log("Master Key Length:", key.length, " (Expected 72 or more)");
-            
             try {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -301,9 +295,7 @@
                 });
 
                 if (!response.ok) {
-                    // Log the actual HTTP status code if the request was blocked by the server (e.g., 401, 403)
-                    const errorDetails = `HTTP Error: ${response.status}. Check Key/URL/Bin-Privacy.`;
-                    console.error("Fetch returned non-OK status:", response.status, response.statusText);
+                    const errorDetails = `HTTP Error: ${response.status}. Check ID URL, Master Key, or if the Bin is Public.`;
                     throw new Error(errorDetails);
                 }
 
@@ -317,11 +309,9 @@
                 }
                 if (viewBtn) viewBtn.disabled = false;
                 showNotification('Archive Loaded from JSONBin', 'success');
-                console.log("--- JSONBIN DEBUG END: Success ---");
                 
             } catch (error) {
-                console.error("--- JSONBIN DEBUG END: Network or Parse Error ---");
-                console.error("Full Error Object:", error);
+                console.error("Failed to load game archive data. Details:", error);
                 
                 if (resultsDiv) {
                     resultsDiv.innerHTML = `
@@ -368,6 +358,7 @@
             }
         }
 
+        // --- NEW/FIXED LOGIC FOR PARSING AND SAVING ---
         function parseAndSaveGame() {
             if (!isAuthenticated) {
                 showNotification('Must be logged into Admin Portal to save.', 'error');
@@ -388,12 +379,10 @@
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
                 .map((line, index) => {
-                    // Attempt to parse (e.g., "City (Player)")
                     const match = line.match(/(.*?)\s*\(([^)]+)\)/);
                     if (match) {
                         return { entry: match[1].trim(), player: match[2].trim() };
                     } else {
-                        // Fallback if format is not strict
                         return { entry: line, player: `Player ${index + 1}` };
                     }
                 });
@@ -401,36 +390,50 @@
             // Format date for storage (DD/MM/YYYY)
             const formattedDate = convertDateToDDMMYYYY(date);
 
-            // 2. Create New Game Object
+            // 2. Create New Game Object (ID is currently TBD)
             const newGame = {
-                id: `${formattedDate}-${ATLAS_ARCHIVE ? ATLAS_ARCHIVE.length + 1 : 1}`,
+                id: 'TBD', 
                 date: formattedDate,
                 status: status,
                 entries: newEntries,
                 savedAt: new Date().toISOString()
             };
 
-            // 3. Check for existing game (e.g., same date) and replace or append
-            // Handle case where ATLAS_ARCHIVE might be null (though loadArchiveData tries to initialize it)
+            // Initialize archive if null
             if (!ATLAS_ARCHIVE) {
                 ATLAS_ARCHIVE = [];
             }
 
+            // 3. Check for existing game (by matching the formatted date)
             const existingIndex = ATLAS_ARCHIVE.findIndex(game => game.date === formattedDate);
 
             if (existingIndex !== -1) {
-                // If a record exists for this date, increment the ID to ensure uniqueness for multiple games on the same day.
-                const countForDate = ATLAS_ARCHIVE.filter(game => game.date === formattedDate).length;
-                newGame.id = `${formattedDate}-${countForDate + 1}`;
-                ATLAS_ARCHIVE.push(newGame); 
-                showNotification(`Added new record for ${formattedDate}`, 'warning');
+                // *** FIX: OVERWRITE EXISTING RECORD ***
+                
+                // Keep the ID of the existing record to maintain continuity
+                newGame.id = ATLAS_ARCHIVE[existingIndex].id; 
+                
+                // Replace the old record at the found index
+                ATLAS_ARCHIVE[existingIndex] = newGame; 
+                
+                showNotification(`Existing record for ${formattedDate} was successfully overwritten.`, 'warning');
             } else {
-                ATLAS_ARCHIVE.push(newGame); // Append new entry
+                // *** ADD NEW RECORD ***
+                
+                // Assign a simple new ID based on the current length (guaranteed unique ID number)
+                newGame.id = `${formattedDate}-${ATLAS_ARCHIVE.length + 1}`;
+                
+                // Push the new record to the archive array
+                ATLAS_ARCHIVE.push(newGame);
+                
+                showNotification(`New game record for ${formattedDate} created.`, 'success');
             }
 
             // 4. Trigger Save to JSONBin
             saveGameArchive();
         }
+        // --- END OF NEW/FIXED LOGIC ---
+
 
         // --- Core Logic Function to Display Games ---
         function showGame() {
