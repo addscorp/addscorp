@@ -266,14 +266,13 @@
             const viewBtn = document.getElementById('viewGameBtn');
             const initialMessage = document.getElementById('initial-message');
 
-            // Bug fix: Check if elements exist before interacting with them (for async calls)
             if (viewBtn) viewBtn.disabled = true;
             if (initialMessage) initialMessage.classList.add('animate-pulse');
 
             const url = HARDCODED_URL;
             const key = HARDCODED_KEY;
 
-            // NEW: Robust check for placeholder values
+            // Robust check for placeholder values
             if (url === "YOUR_BIN_ID_URL_HERE" || key === "YOUR_MASTER_KEY_HERE" || !url.startsWith('https://')) {
                  if (resultsDiv) {
                      resultsDiv.innerHTML = `
@@ -285,6 +284,13 @@
                 return;
             }
 
+            // --- ENHANCED DEBUGGING LOGGING ---
+            console.log("--- JSONBIN DEBUG START ---");
+            console.log("Attempting to fetch data.");
+            // Log the URL structure (anonymizing the key for security)
+            console.log("URL Used (v3 format expected):", url);
+            console.log("Master Key Length:", key.length, " (Expected 72 or more)");
+            
             try {
                 const response = await fetch(url, {
                     method: 'GET',
@@ -295,7 +301,9 @@
                 });
 
                 if (!response.ok) {
-                    const errorDetails = `HTTP Error: ${response.status}. Check ID URL, Master Key, or if the Bin is Public.`;
+                    // Log the actual HTTP status code if the request was blocked by the server (e.g., 401, 403)
+                    const errorDetails = `HTTP Error: ${response.status}. Check Key/URL/Bin-Privacy.`;
+                    console.error("Fetch returned non-OK status:", response.status, response.statusText);
                     throw new Error(errorDetails);
                 }
 
@@ -309,9 +317,11 @@
                 }
                 if (viewBtn) viewBtn.disabled = false;
                 showNotification('Archive Loaded from JSONBin', 'success');
+                console.log("--- JSONBIN DEBUG END: Success ---");
                 
             } catch (error) {
-                console.error("Failed to load game archive data. Details:", error);
+                console.error("--- JSONBIN DEBUG END: Network or Parse Error ---");
+                console.error("Full Error Object:", error);
                 
                 if (resultsDiv) {
                     resultsDiv.innerHTML = `
@@ -319,6 +329,7 @@
                             <p class="text-xl font-bold text-red-500 mb-2">Error Loading Archive!</p>
                             <p class="text-gray-300">Could not connect to JSONBin.</p>
                             <p class="text-xs text-gray-500 mt-1">Error Details: ${error.message}</p>
+                            <p class="text-xs text-gray-400 mt-4">Check console (F12) for detailed network information.</p>
                         </div>`;
                 }
                 showNotification('Data Load Failed', 'error');
@@ -400,7 +411,6 @@
             };
 
             // 3. Check for existing game (e.g., same date) and replace or append
-            // Note: We check against the already converted DD/MM/YYYY date
             // Handle case where ATLAS_ARCHIVE might be null (though loadArchiveData tries to initialize it)
             if (!ATLAS_ARCHIVE) {
                 ATLAS_ARCHIVE = [];
