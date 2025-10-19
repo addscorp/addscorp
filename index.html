@@ -180,7 +180,7 @@
         // !!! PASTE YOUR VALIDATED CREDENTIALS HERE !!!
         // This is the only part you need to edit to auto-load your data.
         // =========================================================================
-        const HARDCODED_URL = "https://api.jsonbin.io/b3/b/68f3dc64d0ea881f40aa8741"; 
+        const HARDCODED_URL = "https://api.jsonbin.io/v3/b/68f3dc64d0ea881f40aa8741"; 
         const HARDCODED_KEY = "$2a$10$zqLmCEPiBb8GMRjxY1ATEupOlfjxD1zAqFEeyC/ZZwuon0o0t1Ip2"; 
         // =========================================================================
         
@@ -266,14 +266,15 @@
             const viewBtn = document.getElementById('viewGameBtn');
             const initialMessage = document.getElementById('initial-message');
 
-            // Bug fix: Check if elements exist before interacting with them
+            // Bug fix: Check if elements exist before interacting with them (for async calls)
             if (viewBtn) viewBtn.disabled = true;
             if (initialMessage) initialMessage.classList.add('animate-pulse');
 
             const url = HARDCODED_URL;
             const key = HARDCODED_KEY;
 
-            if (!url.startsWith('https://') || key.length < 10) {
+            // NEW: Robust check for placeholder values
+            if (url === "YOUR_BIN_ID_URL_HERE" || key === "YOUR_MASTER_KEY_HERE" || !url.startsWith('https://')) {
                  if (resultsDiv) {
                      resultsDiv.innerHTML = `
                         <div class="text-center py-12">
@@ -408,8 +409,11 @@
             const existingIndex = ATLAS_ARCHIVE.findIndex(game => game.date === formattedDate);
 
             if (existingIndex !== -1) {
-                ATLAS_ARCHIVE[existingIndex] = newGame; // Replace old entry with new
-                showNotification(`Replaced existing record for ${formattedDate}`, 'warning');
+                // If a record exists for this date, increment the ID to ensure uniqueness for multiple games on the same day.
+                const countForDate = ATLAS_ARCHIVE.filter(game => game.date === formattedDate).length;
+                newGame.id = `${formattedDate}-${countForDate + 1}`;
+                ATLAS_ARCHIVE.push(newGame); 
+                showNotification(`Added new record for ${formattedDate}`, 'warning');
             } else {
                 ATLAS_ARCHIVE.push(newGame); // Append new entry
             }
