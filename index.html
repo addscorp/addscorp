@@ -209,10 +209,13 @@
 
     <script>
         // =========================================================================
-        // --- STEP 1: PASTE YOUR CREDENTIALS HERE TO AVOID RE-TYPING THEM ---
+        // -----------------  !!! PASTE YOUR CREDENTIALS HERE !!!  -----------------
         // =========================================================================
-        const HARDCODED_URL = "https://api.jsonbin.io/v3/b/68f3dc64d0ea881f40aa874"; 
-        const HARDCODED_KEY = "$2a$10$zqLmCEPiBb8GMRjxY1ATEupOlfjxD1zAqFEeyC"; 
+        // 1. Paste your full JSONBin ID URL (starting with https://) here:
+        const HARDCODED_URL = "https://api.jsonbin.io/v3/b/68f3dc64d0ea881f40aa874"; // PASTE YOUR URL HERE
+
+        // 2. Paste your Master Key (X-Master-Key) here:
+        const HARDCODED_KEY = "$2a$10$zqLmCEPiBb8GMRjxY1ATEupOlfjxD1zAqFEeyC"; // PASTE YOUR KEY HERE
         // =========================================================================
         
         // --- Admin Login Config ---
@@ -265,9 +268,10 @@
             statusMessage.classList.remove('bg-blue-800', 'bg-red-800', 'bg-green-800');
             statusMessage.classList.add('bg-yellow-800');
             
-            if (!url || !masterKey || url === HARDCODED_URL || masterKey === HARDCODED_KEY) {
-                 const msg = (url === HARDCODED_URL || !url) ? "URL is still the default placeholder." : "Master Key is still the default placeholder.";
-                 showNotification(`Configuration Error: ${msg} Please update the constants in the code.`, 'error');
+            // Configuration Check: Must start with http (which includes https) and key must be reasonably long
+            if (!url || !masterKey || !url.startsWith('http') || masterKey.length < 10) {
+                 const msg = "Invalid URL or Master Key detected.";
+                 showNotification(`Configuration Error: ${msg} Please update the HARDCODED_URL and HARDCODED_KEY constants in the script block.`, 'error');
                  initialMessage.textContent = `Configuration required. Please update the HARDCODED_URL and HARDCODED_KEY constants in the script block.`;
                  statusMessage.textContent = `API Status: CONFIG ERROR`;
                  statusMessage.classList.remove('bg-yellow-800');
@@ -583,12 +587,10 @@
 
             // --- Pre-fill inputs from hardcoded constants ---
             // Only pre-fill if the user has replaced the default strings
-            const isConfigured = HARDCODED_URL !== "https://api.jsonbin.io/v3/b/68f3dc64d0ea881f40aa874" && HARDCODED_KEY !== "$2a$10$zqLmCEPiBb8GMRjxY1ATEupOlfjxD1zAqFEeyC";
+            const isConfigured = HARDCODED_URL.startsWith('http') && HARDCODED_KEY.length > 10;
             
-            if (HARDCODED_URL !== "https://api.jsonbin.io/v3/b/68f3dc64d0ea881f40aa874") {
+            if (isConfigured) {
                 document.getElementById('archiveUrl').value = HARDCODED_URL;
-            }
-            if (HARDCODED_KEY !== "$2a$10$zqLmCEPiBb8GMRjxY1ATEupOlfjxD1zAqFEeyC/ZZwuon0o0t1Ip2") {
                 document.getElementById('masterKey').value = HARDCODED_KEY;
             }
             
