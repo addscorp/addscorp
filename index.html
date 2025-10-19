@@ -159,7 +159,11 @@
                 
                 <div>
                     <label for="adminEntries" class="block text-sm font-medium text-gray-300 mb-1">Game Entries (One per line, e.g., Tokyo (AG))</label>
-                    <textarea id="adminEntries" class="input-style h-48 resize-none" placeholder="Tokyo (AG)&#10;Paris (DJ)&#10;..."></textarea>
+                    <textarea 
+                        id="adminEntries" 
+                        class="input-style h-48 resize-none" 
+                        placeholder="Tokyo (AG)&#10;Paris (DJ)&#10;&#10;-- To Delete Record, clear all text and Save. --"
+                    ></textarea>
                 </div>
 
                 <button class="btn-green w-full py-3" onclick="parseAndSaveGame()">Save & Update Archive</button>
@@ -195,7 +199,7 @@
         // Display transient notification messages
         function showNotification(message, type = 'success') {
             const area = document.getElementById('notification-area');
-            const color = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-yellow-600';
+            const color = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : type === 'info' ? 'bg-blue-600' : 'bg-yellow-600';
             const notification = document.createElement('div');
             notification.className = `p-3 rounded-lg text-white font-semibold shadow-xl ${color} max-w-xs mx-auto transform transition duration-300`;
             notification.innerHTML = message;
@@ -266,14 +270,12 @@
             const viewBtn = document.getElementById('viewGameBtn');
             const initialMessage = document.getElementById('initial-message');
 
-            // Bug fix: Check if elements exist before interacting with them (for async calls)
             if (viewBtn) viewBtn.disabled = true;
             if (initialMessage) initialMessage.classList.add('animate-pulse');
 
             const url = HARDCODED_URL;
             const key = HARDCODED_KEY;
 
-            // Robust check for placeholder values
             if (url === "YOUR_BIN_ID_URL_HERE" || key === "YOUR_MASTER_KEY_HERE" || !url.startsWith('https://')) {
                  if (resultsDiv) {
                      resultsDiv.innerHTML = `
@@ -350,7 +352,7 @@
 
                 // Reload the data back immediately to confirm and update the global state
                 await loadArchiveData(); 
-                showNotification('Game Record Saved & Archive Updated!', 'success');
+                showNotification('Archive successfully synced to JSONBin!', 'success');
 
             } catch (error) {
                 console.error("Data Save Error:", error);
@@ -358,7 +360,7 @@
             }
         }
 
-        // --- NEW/FIXED LOGIC FOR PARSING AND SAVING ---
+        // --- Core Logic for Saving/Deleting Records ---
         function parseAndSaveGame() {
             if (!isAuthenticated) {
                 showNotification('Must be logged into Admin Portal to save.', 'error');
@@ -369,12 +371,12 @@
             const status = document.getElementById('adminStatus').value;
             const entriesText = document.getElementById('adminEntries').value;
             
-            if (!date || !entriesText.trim()) {
-                showNotification('Date and Entries cannot be blank.', 'error');
+            if (!date) {
+                showNotification('Date cannot be blank.', 'error');
                 return;
             }
 
-            // 1. Parse Entries
+            // 1. Parse Entries (only keeps lines with content)
             const newEntries = entriesText.split('\n')
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
@@ -387,10 +389,31 @@
                     }
                 });
             
-            // Format date for storage (DD/MM/YYYY)
             const formattedDate = convertDateToDDMMYYYY(date);
 
-            // 2. Create New Game Object (ID is currently TBD)
+            if (!ATLAS_ARCHIVE) {
+                ATLAS_ARCHIVE = [];
+            }
+
+            // 2. Check for existing game index
+            const existingIndex = ATLAS_ARCHIVE.findIndex(game => game.date === formattedDate);
+
+            // --- DELETION LOGIC ---
+            if (newEntries.length === 0) {
+                if (existingIndex !== -1) {
+                    // Found existing record AND entries are blank -> DELETE
+                    ATLAS_ARCHIVE.splice(existingIndex, 1);
+                    saveGameArchive();
+                    showNotification(`Game record for ${formattedDate} successfully DELETED.`, 'warning');
+                } else {
+                    // Entries are blank BUT no record found
+                    showNotification(`No existing record found for ${formattedDate} to delete.`, 'info');
+                }
+                return; // Stop processing after attempting deletion/no-op deletion
+            }
+            // --- END DELETION LOGIC ---
+            
+            // 3. If entries are NOT empty, proceed with OVERWRITE/ADD logic
             const newGame = {
                 id: 'TBD', 
                 date: formattedDate,
@@ -399,40 +422,22 @@
                 savedAt: new Date().toISOString()
             };
 
-            // Initialize archive if null
-            if (!ATLAS_ARCHIVE) {
-                ATLAS_ARCHIVE = [];
-            }
-
-            // 3. Check for existing game (by matching the formatted date)
-            const existingIndex = ATLAS_ARCHIVE.findIndex(game => game.date === formattedDate);
-
             if (existingIndex !== -1) {
-                // *** FIX: OVERWRITE EXISTING RECORD ***
-                
-                // Keep the ID of the existing record to maintain continuity
+                // OVERWRITE EXISTING RECORD
                 newGame.id = ATLAS_ARCHIVE[existingIndex].id; 
-                
-                // Replace the old record at the found index
                 ATLAS_ARCHIVE[existingIndex] = newGame; 
-                
                 showNotification(`Existing record for ${formattedDate} was successfully overwritten.`, 'warning');
             } else {
-                // *** ADD NEW RECORD ***
-                
-                // Assign a simple new ID based on the current length (guaranteed unique ID number)
+                // ADD NEW RECORD
                 newGame.id = `${formattedDate}-${ATLAS_ARCHIVE.length + 1}`;
-                
-                // Push the new record to the archive array
                 ATLAS_ARCHIVE.push(newGame);
-                
                 showNotification(`New game record for ${formattedDate} created.`, 'success');
             }
 
             // 4. Trigger Save to JSONBin
             saveGameArchive();
         }
-        // --- END OF NEW/FIXED LOGIC ---
+        // --- END OF CORE LOGIC ---
 
 
         // --- Core Logic Function to Display Games ---
