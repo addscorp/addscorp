@@ -3,16 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATLAS Corporation Game Archive</title>
+    <title>ATLAS Corporation | Game Archive</title>
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Extended Tailwind Configuration for ATLAS Corp branding
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         'atlas-dark': '#0d1a26',
-                        'atlas-blue': '#1e40af',
-                        'atlas-light': '#a5b4fc',
+                        'atlas-blue': '#2b6cb0', /* Tailwind blue-700 equivalent */
+                        'atlas-light': '#a5b4fc', /* For button highlights */
+                        'status-complete': '#10b981', /* Green */
+                        'status-progress': '#f59e0b', /* Yellow */
+                        'status-pending': '#60a5fa',  /* Blue */
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -22,21 +27,22 @@
         }
     </script>
     <style>
+        /* Set a custom font and background for a corporate look */
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #0d1a26; /* Dark Navy Background */
+            padding-bottom: 4rem; /* Space for fixed footer */
         }
-        .container-mobile {
-            max-width: 100%;
-            padding: 0.5rem;
+        /* Custom scrollbar for game results */
+        .scrollable-results::-webkit-scrollbar {
+            width: 8px;
         }
-        @media (min-width: 640px) {
-            .container-mobile {
-                max-width: 600px;
-                padding: 1rem;
-            }
+        .scrollable-results::-webkit-scrollbar-thumb {
+            background-color: #2b6cb0; /* Bright blue for scroll thumb */
+            border-radius: 4px;
         }
-        .input-style {
-            @apply p-2 rounded-lg border border-gray-600 bg-gray-700 text-white focus:outline-none focus:border-atlas-blue transition w-full;
+        .text-atlas-blue {
+            color: #2b6cb0; /* Tailwind blue-700 equivalent */
         }
         .btn-base {
             @apply px-4 py-2 font-semibold rounded-lg text-white transition duration-200 shadow-md;
@@ -47,130 +53,149 @@
         .btn-green {
             @apply btn-base bg-green-600 hover:bg-green-700;
         }
-        .btn-red {
-            @apply btn-base bg-red-600 hover:bg-red-700;
-        }
-        .card {
-            @apply bg-gray-800 p-4 rounded-xl shadow-lg;
+        .input-style {
+            @apply p-3 text-lg rounded-lg border-2 border-gray-600 bg-gray-700 text-white focus:outline-none focus:border-atlas-blue transition w-full;
         }
     </style>
 </head>
-<body class="bg-atlas-dark text-white min-h-screen">
+<body class="min-h-screen p-4 sm:p-8">
 
-    <!-- Notification Area -->
+    <!-- Notification Area for API status messages -->
     <div id="notification-area" class="fixed top-0 left-0 right-0 z-50 p-4 space-y-2"></div>
 
-    <div class="container-mobile mx-auto pt-6">
-        <header class="text-center mb-6">
-            <h1 class="text-4xl font-extrabold text-atlas-light">ATLAS CORPORATION</h1>
-            <p id="subheading" class="text-gray-400 mt-1">Game Archive & Admin Portal</p>
+    <div class="max-w-4xl mx-auto bg-gray-800 shadow-2xl rounded-xl p-6 md:p-10">
+        <!-- Header -->
+        <header class="text-center mb-6 border-b border-gray-700 pb-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+                ATLAS <span class="text-atlas-blue">Corporation</span>
+            </h1>
+            <p class="mt-2 text-xl text-gray-400">Official Game Archive</p>
         </header>
-
+        
         <!-- Main View Tabs -->
-        <div class="flex justify-center space-x-2 mb-6">
-            <button id="tab-archive" class="btn-base" onclick="setView('archive')">Archive View</button>
-            <button id="tab-admin" class="btn-base" onclick="setView('admin')">Admin Portal</button>
+        <div class="flex justify-center space-x-4 mb-8">
+            <button 
+                id="tab-archive" 
+                class="btn-base bg-atlas-light text-atlas-dark hover:bg-gray-400" 
+                onclick="setView('archive')"
+            >
+                Archive View
+            </button>
+            <button 
+                id="tab-admin" 
+                class="btn-base bg-gray-600 hover:bg-atlas-blue" 
+                onclick="setView('admin')"
+            >
+                Admin Portal
+            </button>
         </div>
 
-        <!-- Connection Fields (Hidden if configured) -->
-        <div id="config-panel" class="card mb-6 space-y-4">
-            <h2 class="text-xl font-bold text-atlas-light">Connection Setup</h2>
-            <div>
-                <label for="binUrl" class="block text-sm font-medium text-gray-300 mb-1">JSONBin ID URL</label>
-                <input type="url" id="binUrl" class="input-style" placeholder="https://api.jsonbin.io/v3/b/..." value="">
+        <!-- Archive View Content -->
+        <div id="view-archive" class="space-y-8">
+            <!-- Date Picker Section -->
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <label for="gameDate" class="text-lg font-medium text-gray-300">
+                    Select Game Date:
+                </label>
+                <input 
+                    type="date" 
+                    id="gameDate" 
+                    class="input-style w-full sm:w-auto text-lg"
+                >
+                <button 
+                    id="viewGameBtn" 
+                    class="w-full sm:w-auto px-6 py-3 text-lg font-semibold rounded-lg text-white bg-atlas-blue hover:bg-blue-700 transition duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] disabled:opacity-50"
+                    onclick="showGame()"
+                    disabled 
+                >
+                    View Game
+                </button>
             </div>
-            <div>
-                <label for="masterKey" class="block text-sm font-medium text-gray-300 mb-1">JSONBin Master Key</label>
-                <input type="password" id="masterKey" class="input-style" placeholder="Paste your Master Key here" value="">
-            </div>
-            <button id="loadDataBtn" class="btn-green w-full" onclick="initManualLoad()">Load Latest Data</button>
-        </div>
 
-        <!-- Archive View -->
-        <div id="view-archive" class="space-y-4">
-            <div class="card">
-                <h2 class="text-xl font-bold text-atlas-light mb-3">Game Records</h2>
-                <select id="gameSelector" class="input-style mb-3" onchange="displayGameDetails()">
-                    <option value="">-- Select Game Date --</option>
-                </select>
-            </div>
-            <div id="game-details" class="card hidden">
-                <p id="detail-date" class="text-lg font-bold mb-2"></p>
-                <p id="detail-status" class="mb-4 text-sm"></p>
-                <ul id="entries-list" class="space-y-1">
-                    <!-- Entries will be dynamically inserted here -->
-                </ul>
-            </div>
-            <div id="archive-placeholder" class="card text-center py-8 text-gray-400">
-                <p>Data not loaded. Please ensure credentials are correct and click 'Load Latest Data'.</p>
-            </div>
-        </div>
 
-        <!-- Admin View -->
-        <div id="view-admin" class="space-y-4 hidden">
-            <div id="auth-check" class="card text-center py-8 bg-red-900 text-red-300">
-                <p>Admin access required.</p>
+            <!-- Game Results Display Area -->
+            <section class="mt-8">
+                <h2 class="text-2xl font-bold text-gray-300 mb-4 border-b border-gray-700 pb-2">Match Report</h2>
+                <div id="game-results" class="bg-gray-700 p-4 rounded-lg min-h-[250px] max-h-[500px] overflow-y-auto scrollable-results">
+                    <p id="initial-message" class="text-gray-400 text-center py-16">
+                        Loading ATLAS Corporation archive data...
+                    </p>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Admin Portal Content -->
+        <div id="view-admin" class="space-y-8 hidden">
+             <div id="auth-check" class="bg-red-900 p-4 rounded-lg text-red-300 text-center font-bold">
+                <p>Authentication Required for Admin Access.</p>
             </div>
-            <div id="admin-controls" class="hidden">
-                <div class="card mb-4 space-y-4">
-                    <h2 class="text-xl font-bold text-atlas-light">Create New Game Record</h2>
-                    
-                    <div class="flex space-x-4">
-                        <div class="w-1/2">
-                            <label for="adminDate" class="block text-sm font-medium text-gray-300 mb-1">Game Date</label>
-                            <input type="date" id="adminDate" class="input-style" value="">
-                        </div>
-                        <div class="w-1/2">
-                            <label for="adminStatus" class="block text-sm font-medium text-gray-300 mb-1">Game Status</label>
-                            <select id="adminStatus" class="input-style">
-                                <option value="COMPLETE">COMPLETE</option>
-                                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                                <option value="PENDING">PENDING</option>
-                            </select>
-                        </div>
+            
+            <!-- Admin Login Form -->
+            <div class="bg-gray-700 p-6 rounded-xl shadow-lg space-y-4">
+                <h2 class="text-2xl font-bold text-atlas-blue border-b border-gray-600 pb-2">Admin Login</h2>
+                <input type="text" id="adminUsername" class="input-style" placeholder="Username">
+                <input type="password" id="adminPassword" class="input-style" placeholder="Password">
+                <button class="btn-blue w-full py-3" onclick="adminLogin()">Login</button>
+            </div>
+            
+            <!-- Create/Save Game Record Form (Visible only after login) -->
+            <div id="admin-controls" class="hidden bg-gray-700 p-6 rounded-xl shadow-lg space-y-4">
+                <h2 class="text-2xl font-bold text-atlas-blue border-b border-gray-600 pb-2">Create New Game Record</h2>
+                
+                <div class="flex space-x-4">
+                    <div class="w-1/2">
+                        <label for="adminDate" class="block text-sm font-medium text-gray-300 mb-1">Game Date</label>
+                        <input type="date" id="adminDate" class="input-style text-lg" value="">
                     </div>
-                    
-                    <div>
-                        <label for="adminEntries" class="block text-sm font-medium text-gray-300 mb-1">Game Entries (One per line, e.g., Tokyo (AG))</label>
-                        <textarea id="adminEntries" class="input-style h-48 resize-none" placeholder="Tokyo (AG)&#10;Paris (DJ)&#10;..."></textarea>
+                    <div class="w-1/2">
+                        <label for="adminStatus" class="block text-sm font-medium text-gray-300 mb-1">Game Status</label>
+                        <select id="adminStatus" class="input-style text-lg h-[50px] bg-gray-700">
+                            <option value="COMPLETE">COMPLETE</option>
+                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option value="PENDING">PENDING</option>
+                        </select>
                     </div>
-
-                    <button class="btn-green w-full" onclick="parseAndSaveGame()">Parse and Automatically Save Game</button>
+                </div>
+                
+                <div>
+                    <label for="adminEntries" class="block text-sm font-medium text-gray-300 mb-1">Game Entries (One per line, e.g., Tokyo (AG))</label>
+                    <textarea id="adminEntries" class="input-style h-48 resize-none" placeholder="Tokyo (AG)&#10;Paris (DJ)&#10;..."></textarea>
                 </div>
 
-                <div class="card">
-                    <h2 class="text-xl font-bold text-atlas-light mb-3">Admin Login</h2>
-                    <div class="space-y-4">
-                        <input type="text" id="adminUsername" class="input-style" placeholder="Username">
-                        <input type="password" id="adminPassword" class="input-style" placeholder="Password">
-                        <button class="btn-blue w-full" onclick="adminLogin()">Login</button>
-                    </div>
-                </div>
+                <button class="btn-green w-full py-3" onclick="parseAndSaveGame()">Save & Update Archive</button>
             </div>
         </div>
+
+
+        <!-- Footer / Instructions -->
+        <footer class="mt-10 pt-4 border-t border-gray-700 text-center text-sm text-gray-500">
+            <p>ATLAS Corporation | From Abhishek, Swayam, Dhyan, Darsh</p>
+            <p class="mt-1">Lead Developer: Abhishek</p>
+        </footer>
     </div>
 
-    <script>
-        // Global State
-        let ATLAS_ARCHIVE = [];
-        let isAuthenticated = false;
 
+    <script>
         // =========================================================================
         // !!! PASTE YOUR VALIDATED CREDENTIALS HERE !!!
-        // You should see these lines immediately after the "Global State" block.
+        // This is the only part you need to edit to auto-load your data.
         // =========================================================================
         const HARDCODED_URL = "https://api.jsonbin.io/v3/b/68f3dc64d0ea881f40aa8741"; 
         const HARDCODED_KEY = "$2a$10$zqLmCEPiBb8GMRjxY1ATEupOlfjxD1zAqFEeyC/ZZwuon0o0t1Ip2"; 
         // =========================================================================
+        
+        const ADMIN_USER = 'atlasadmin'; // Default Admin Username
+        const ADMIN_PASS = 'gamecorp';   // Default Admin Password
 
-        const ADMIN_USER = 'atlasadmin';
-        const ADMIN_PASS = 'gamecorp';
+        let ATLAS_ARCHIVE = null; // Variable to hold the fetched JSON data (an array of games)
+        let isAuthenticated = false;
 
         // --- Utility Functions ---
 
+        // Display transient notification messages
         function showNotification(message, type = 'success') {
             const area = document.getElementById('notification-area');
-            const color = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-yellow-500';
+            const color = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-yellow-600';
             const notification = document.createElement('div');
             notification.className = `p-3 rounded-lg text-white font-semibold shadow-xl ${color} max-w-xs mx-auto transform transition duration-300`;
             notification.innerHTML = message;
@@ -180,6 +205,42 @@
                 notification.classList.add('opacity-0');
                 setTimeout(() => notification.remove(), 300);
             }, 3000);
+        }
+
+        // Converts YYYY-MM-DD (from input) to DD/MM/YYYY (for comparison/display)
+        function convertDateToDDMMYYYY(dateString) {
+            if (!dateString) return null;
+            const parts = dateString.split('-'); // e.g., ["2025", "10", "15"]
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        // Gets Tailwind classes for status colors
+        function getStatusClasses(status) {
+            switch (status) {
+                case 'COMPLETE':
+                    return 'bg-status-complete text-gray-800';
+                case 'IN_PROGRESS':
+                    return 'bg-status-progress text-gray-800';
+                case 'PENDING':
+                    return 'bg-status-pending text-gray-800';
+                default:
+                    return 'bg-gray-600 text-white';
+            }
+        }
+        
+        // --- Tab View Control ---
+        function setView(viewId) {
+            document.getElementById('tab-archive').classList.remove('bg-atlas-light', 'text-atlas-dark');
+            document.getElementById('tab-archive').classList.add('bg-gray-600', 'hover:bg-atlas-blue');
+            document.getElementById('tab-admin').classList.remove('bg-atlas-light', 'text-atlas-dark');
+            document.getElementById('tab-admin').classList.add('bg-gray-600', 'hover:bg-atlas-blue');
+
+            document.getElementById('view-archive').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+
+            document.getElementById(`tab-${viewId}`).classList.remove('bg-gray-600', 'hover:bg-atlas-blue');
+            document.getElementById(`tab-${viewId}`).classList.add('bg-atlas-light', 'text-atlas-dark');
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
         }
 
         // --- Admin/Authentication ---
@@ -200,14 +261,32 @@
 
         // --- API & Data Functions ---
 
-        async function loadData(url, key) {
-            document.getElementById('archive-placeholder').innerHTML = 'Loading data...';
+        async function loadArchiveData() {
+            const resultsDiv = document.getElementById('game-results');
+            const viewBtn = document.getElementById('viewGameBtn');
+            const initialMessage = document.getElementById('initial-message');
+
+            viewBtn.disabled = true;
+            initialMessage.classList.add('animate-pulse');
+
+            const url = HARDCODED_URL;
+            const key = HARDCODED_KEY;
+
+            if (!url.startsWith('https://') || key.length < 10) {
+                 resultsDiv.innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-xl font-bold text-red-500 mb-2">Configuration Required!</p>
+                        <p class="text-gray-300">Please provide your valid <code>HARDCODED_URL</code> and <code>HARDCODED_KEY</code> in the script block.</p>
+                    </div>`;
+                return;
+            }
+
             try {
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'X-Master-Key': key,
-                        'X-Bin-Meta': 'false' // Ensure we get raw data
+                        'X-Bin-Meta': 'false'
                     }
                 });
 
@@ -218,29 +297,31 @@
 
                 const data = await response.json();
                 
-                // Set global state and update UI
                 ATLAS_ARCHIVE = Array.isArray(data) ? data : [];
-                populateGameSelector();
-                document.getElementById('archive-placeholder').classList.add('hidden');
-                showNotification('Data Loaded Successfully', 'success');
-
+                
+                initialMessage.textContent = "Archive loaded successfully. Select a date to view a match report.";
+                initialMessage.classList.remove('animate-pulse');
+                viewBtn.disabled = false;
+                showNotification('Archive Loaded from JSONBin', 'success');
+                
             } catch (error) {
-                console.error("Data Load Error:", error);
-                document.getElementById('archive-placeholder').innerHTML = `
-                    <p class="text-red-400">Error Connecting to JSONBin!</p>
-                    <p class="text-sm mt-2">${error.message}</p>
-                    <p class="text-xs mt-2">Ensure the URL (Bin ID), Master Key, and Bin Privacy are correct.</p>
-                `;
-                document.getElementById('archive-placeholder').classList.remove('hidden');
-                ATLAS_ARCHIVE = [];
-                populateGameSelector();
+                console.error("Failed to load game archive data. Details:", error);
+                
+                resultsDiv.innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-xl font-bold text-red-500 mb-2">Error Loading Archive!</p>
+                        <p class="text-gray-300">Could not connect to JSONBin.</p>
+                        <p class="text-xs text-gray-500 mt-1">Error Details: ${error.message}</p>
+                    </div>`;
                 showNotification('Data Load Failed', 'error');
             }
         }
 
-        async function saveGameArchive(url, key) {
+        async function saveGameArchive() {
+            const url = HARDCODED_URL;
+            const key = HARDCODED_KEY;
+
              try {
-                // Ensure the data is saved as a JSON array
                 const payload = JSON.stringify(ATLAS_ARCHIVE);
 
                 const response = await fetch(url, {
@@ -258,8 +339,8 @@
                     throw new Error(errorDetails);
                 }
 
-                // Load the data back immediately to confirm and update UI
-                await loadData(url, key);
+                // Reload the data back immediately to confirm and update the global state
+                await loadArchiveData(); 
                 showNotification('Game Record Saved & Archive Updated!', 'success');
 
             } catch (error) {
@@ -273,9 +354,6 @@
                 showNotification('Must be logged into Admin Portal to save.', 'error');
                 return;
             }
-
-            const url = document.getElementById('binUrl').value || HARDCODED_URL;
-            const key = document.getElementById('masterKey').value || HARDCODED_KEY;
 
             const date = document.getElementById('adminDate').value;
             const status = document.getElementById('adminStatus').value;
@@ -300,129 +378,142 @@
                         return { entry: line, player: `Player ${index + 1}` };
                     }
                 });
+            
+            // Format date for storage (DD/MM/YYYY)
+            const formattedDate = convertDateToDDMMYYYY(date);
 
             // 2. Create New Game Object
             const newGame = {
-                id: `${date}-${ATLAS_ARCHIVE.length + 1}`,
-                date: date,
+                id: `${formattedDate}-${ATLAS_ARCHIVE ? ATLAS_ARCHIVE.length + 1 : 1}`,
+                date: formattedDate,
                 status: status,
                 entries: newEntries,
                 savedAt: new Date().toISOString()
             };
 
             // 3. Check for existing game (e.g., same date) and replace or append
-            const existingIndex = ATLAS_ARCHIVE.findIndex(game => game.date === date);
+            // Note: We check against the already converted DD/MM/YYYY date
+            const existingIndex = ATLAS_ARCHIVE.findIndex(game => game.date === formattedDate);
 
             if (existingIndex !== -1) {
                 ATLAS_ARCHIVE[existingIndex] = newGame; // Replace old entry with new
-                showNotification(`Replaced existing record for ${date}`, 'warning');
+                showNotification(`Replaced existing record for ${formattedDate}`, 'warning');
             } else {
                 ATLAS_ARCHIVE.push(newGame); // Append new entry
             }
 
             // 4. Trigger Save to JSONBin
-            saveGameArchive(url, key);
+            saveGameArchive();
         }
 
-        // --- UI Logic ---
+        // --- Core Logic Function to Display Games ---
+        function showGame() {
+            if (!ATLAS_ARCHIVE) return; // Safeguard if data isn't loaded
 
-        function setView(viewId) {
-            document.getElementById('tab-archive').classList.remove('bg-atlas-light', 'text-atlas-dark');
-            document.getElementById('tab-admin').classList.remove('bg-atlas-light', 'text-atlas-dark');
+            const dateInput = document.getElementById('gameDate');
+            const resultsDiv = document.getElementById('game-results');
+            const dateValue = dateInput.value; // YYYY-MM-DD format
 
-            document.getElementById('view-archive').classList.add('hidden');
-            document.getElementById('view-admin').classList.add('hidden');
-
-            document.getElementById(`tab-${viewId}`).classList.add('bg-atlas-light', 'text-atlas-dark');
-            document.getElementById(`view-${viewId}`).classList.remove('hidden');
-        }
-
-        function populateGameSelector() {
-            const selector = document.getElementById('gameSelector');
-            selector.innerHTML = '<option value="">-- Select Game Date --</option>';
-
-            // Sort by date (newest first)
-            const sortedArchive = [...ATLAS_ARCHIVE].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            sortedArchive.forEach(game => {
-                const option = document.createElement('option');
-                option.value = game.date;
-                option.textContent = `${game.date} (${game.status})`;
-                selector.appendChild(option);
-            });
-
-            // Clear details when populating
-            document.getElementById('game-details').classList.add('hidden');
-        }
-
-        function displayGameDetails() {
-            const selectedDate = document.getElementById('gameSelector').value;
-            const detailsDiv = document.getElementById('game-details');
-            const entriesList = document.getElementById('entries-list');
-
-            if (!selectedDate) {
-                detailsDiv.classList.add('hidden');
+            resultsDiv.innerHTML = '';
+            
+            if (!dateValue) {
+                resultsDiv.innerHTML = '<p class="text-red-400 text-center py-16">Please select a valid date to view the game.</p>';
                 return;
             }
 
-            const game = ATLAS_ARCHIVE.find(g => g.date === selectedDate);
-            if (!game) return;
+            // The data stored in the archive uses DD/MM/YYYY
+            const searchDateDDMMYYYY = convertDateToDDMMYYYY(dateValue);
 
-            // Update details
-            document.getElementById('detail-date').textContent = `Game Date: ${game.date}`;
-            document.getElementById('detail-status').textContent = `Status: ${game.status}`;
-            
-            // Populate entries
-            entriesList.innerHTML = '';
-            game.entries.forEach(entry => {
-                const li = document.createElement('li');
-                li.className = 'text-gray-300 border-b border-gray-700 last:border-b-0 py-1 flex justify-between';
-                li.innerHTML = `
-                    <span class="font-medium text-atlas-light">${entry.entry}</span>
-                    <span class="text-sm text-gray-400">Player: ${entry.player}</span>
-                `;
-                entriesList.appendChild(li);
+            // Filter all games that match the selected date (DD/MM/YYYY)
+            const gamesForDate = ATLAS_ARCHIVE.filter(game => game.date === searchDateDDMMYYYY);
+
+            if (gamesForDate.length === 0) {
+                resultsDiv.innerHTML = `
+                    <p class="text-gray-400 text-center py-16">
+                        No official ATLAS Corporation games were recorded for <span class="font-bold text-white">${searchDateDDMMYYYY}</span>.
+                    </p>`;
+                return;
+            }
+
+            // Loop through all games found for the date and render them
+            gamesForDate.forEach((game) => {
+                const entries = game.entries;
+                const status = game.status;
+                const statusClasses = getStatusClasses(status);
+                
+                let entryHTML = '';
+
+                // 1. Generate the list of entries
+                if (entries.length > 0) {
+                    entryHTML = `
+                        <ul class="space-y-3 mt-4 px-1">
+                            ${entries.map((item, entryIndex) => {
+                                // Keeping styling consistent with your original intent
+                                const neutralBorder = 'border-atlas-blue'; 
+                                const neutralPlayerBg = 'bg-gray-600';
+                                
+                                return `
+                                    <li class="p-3 bg-gray-800 rounded-lg shadow-md border-l-4 ${neutralBorder}">
+                                        <div class="flex justify-between items-center">
+                                            <!-- Entry Content with sequential number -->
+                                            <span class="text-white text-lg font-semibold">
+                                                ${entryIndex + 1}. ${item.entry}
+                                            </span>
+                                            
+                                            <!-- Player Badge (A or D) -->
+                                            <span class="text-sm font-bold w-6 h-6 leading-6 text-center rounded-full text-white ${neutralPlayerBg} shadow-inner">
+                                                ${item.player}
+                                            </span>
+                                        </div>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>`;
+                } else {
+                     entryHTML = `<p class="text-gray-400 text-center py-2 text-sm">No entries have been recorded yet for this game.</p>`;
+                }
+
+                // 2. Generate the Game Card for this match
+                const gameCard = `
+                    <div class="bg-gray-700 p-4 rounded-lg shadow-xl mb-6">
+                        <div class="flex justify-between items-start border-b border-gray-600 pb-2 mb-3">
+                            <div>
+                                <h3 class="font-extrabold text-white text-xl">Game Report: <span class="text-atlas-blue">${game.id}</span></h3>
+                            </div>
+                            <span class="text-sm text-gray-300 bg-gray-600 py-1 px-3 rounded-full">${game.date}</span>
+                        </div>
+                        
+                        <p class="font-bold text-gray-300 text-lg border-b border-gray-700 pb-1 mb-2">Game Entries:</p>
+                        
+                        <!-- Entries List -->
+                        ${entryHTML}
+                        
+                        <!-- Game Result Field (Visually separated at the bottom) -->
+                        <div class="bg-gray-800 border-l-4 ${statusClasses} p-3 rounded-md mt-6 shadow-inner">
+                            <p class="font-bold text-lg mb-1 ${status === 'COMPLETE' ? 'text-green-300' : status === 'IN_PROGRESS' ? 'text-yellow-300' : 'text-blue-300'}">Game Status:</p>
+                            <p class="text-white text-md">${status}</p>
+                        </div>
+                    </div>`;
+
+                resultsDiv.innerHTML += gameCard;
             });
+        }
 
-            detailsDiv.classList.remove('hidden');
-        }
-        
-        function initManualLoad() {
-            const url = document.getElementById('binUrl').value;
-            const key = document.getElementById('masterKey').value;
-            loadData(url, key);
-        }
 
         // --- Initialization ---
 
-        function initApp() {
-            // Set today's date in admin form
-            document.getElementById('adminDate').valueAsDate = new Date();
-
-            const isConfigured = HARDCODED_URL.startsWith('https://') && HARDCODED_KEY.length > 10;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set input default to today's date (YYYY-MM-DD format)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('gameDate').value = today;
+            document.getElementById('adminDate').value = today;
             
-            if (isConfigured) {
-                // Auto-load data if credentials are hardcoded
-                loadData(HARDCODED_URL, HARDCODED_KEY);
-                
-                // Hide manual config fields since it's auto-configured
-                document.getElementById('binUrl').value = HARDCODED_URL;
-                document.getElementById('masterKey').value = HARDCODED_KEY;
-                document.getElementById('config-panel').classList.add('hidden');
-                document.getElementById('archive-placeholder').innerHTML = 'Loading data automatically...';
-
-            } else {
-                // Show configuration requirement if constants are placeholders
-                document.getElementById('archive-placeholder').innerHTML = `
-                    <p class="font-semibold text-yellow-400">Configuration required.</p>
-                    <p class="text-sm mt-2">Please update the HARDCODED_URL and HARDCODED_KEY constants in the script block.</p>
-                `;
-            }
-
+            // Start loading the data immediately
+            loadArchiveData(); 
+            
+            // Set initial tab state
             setView('archive');
-        }
-
-        window.onload = initApp;
+        });
     </script>
 </body>
 </html>
