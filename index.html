@@ -158,11 +158,11 @@
                 </div>
                 
                 <div>
-                    <label for="adminEntries" class="block text-sm font-medium text-gray-300 mb-1">Game Entries (One per line, e.g., Tokyo (AG))</label>
+                    <label for="adminEntries" class="block text-sm font-medium text-gray-300 mb-1">Game Entries (One per line, e.g., Tokyo (ABHIK))</label>
                     <textarea 
                         id="adminEntries" 
                         class="input-style h-48 resize-none" 
-                        placeholder="Tokyo (AG)&#10;Paris (DJ)&#10;&#10;-- To Delete Record, clear all text and Save. --"
+                        placeholder="New York (SWAY)&#10;Paris (DHN)&#10;&#10;-- To Delete Record, clear all text and Save. --"
                     ></textarea>
                 </div>
 
@@ -360,7 +360,7 @@
             }
         }
 
-        // --- Core Logic for Saving/Deleting Records ---
+        // --- Core Logic for Saving/Deleting/Appending Records ---
         function parseAndSaveGame() {
             if (!isAuthenticated) {
                 showNotification('Must be logged into Admin Portal to save.', 'error');
@@ -381,11 +381,13 @@
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
                 .map((line, index) => {
+                    // Regex is flexible to allow any number of characters inside the parentheses
                     const match = line.match(/(.*?)\s*\(([^)]+)\)/);
                     if (match) {
                         return { entry: match[1].trim(), player: match[2].trim() };
                     } else {
-                        return { entry: line, player: `Player ${index + 1}` };
+                        // If no player is specified, assign a generic ID
+                        return { entry: line, player: `Unknown${index + 1}` }; 
                     }
                 });
             
@@ -398,38 +400,50 @@
             // 2. Check for existing game index
             const existingIndex = ATLAS_ARCHIVE.findIndex(game => game.date === formattedDate);
 
-            // --- DELETION LOGIC ---
+            // --- DELETION LOGIC (If entries are blank, delete the record) ---
             if (newEntries.length === 0) {
                 if (existingIndex !== -1) {
-                    // Found existing record AND entries are blank -> DELETE
                     ATLAS_ARCHIVE.splice(existingIndex, 1);
                     saveGameArchive();
                     showNotification(`Game record for ${formattedDate} successfully DELETED.`, 'warning');
                 } else {
-                    // Entries are blank BUT no record found
                     showNotification(`No existing record found for ${formattedDate} to delete.`, 'info');
                 }
-                return; // Stop processing after attempting deletion/no-op deletion
+                return; 
             }
             // --- END DELETION LOGIC ---
             
-            // 3. If entries are NOT empty, proceed with OVERWRITE/ADD logic
-            const newGame = {
-                id: 'TBD', 
-                date: formattedDate,
-                status: status,
-                entries: newEntries,
-                savedAt: new Date().toISOString()
-            };
-
+            // 3. If entries are NOT empty, proceed with APPEND/ADD logic
             if (existingIndex !== -1) {
-                // OVERWRITE EXISTING RECORD
-                newGame.id = ATLAS_ARCHIVE[existingIndex].id; 
-                ATLAS_ARCHIVE[existingIndex] = newGame; 
-                showNotification(`Existing record for ${formattedDate} was successfully overwritten.`, 'warning');
+                // *** APPEND LOGIC (Update existing entries) ***
+                
+                const existingGame = ATLAS_ARCHIVE[existingIndex];
+                
+                // Concatenate the old entries with the new entries
+                const updatedEntries = existingGame.entries.concat(newEntries);
+
+                // Create the updated game object, keeping the original ID
+                const updatedGame = {
+                    ...existingGame, 
+                    status: status, // Update status
+                    entries: updatedEntries, // Use combined entries
+                    savedAt: new Date().toISOString() // Update timestamp
+                };
+                
+                ATLAS_ARCHIVE[existingIndex] = updatedGame; 
+                
+                showNotification(`Existing game record for ${formattedDate} was successfully updated with new entries.`, 'info');
             } else {
                 // ADD NEW RECORD
-                newGame.id = `${formattedDate}-${ATLAS_ARCHIVE.length + 1}`;
+                
+                const newGame = {
+                    id: `${formattedDate}-${ATLAS_ARCHIVE.length + 1}`,
+                    date: formattedDate,
+                    status: status,
+                    entries: newEntries,
+                    savedAt: new Date().toISOString()
+                };
+
                 ATLAS_ARCHIVE.push(newGame);
                 showNotification(`New game record for ${formattedDate} created.`, 'success');
             }
@@ -496,8 +510,8 @@
                                                 ${entryIndex + 1}. ${item.entry}
                                             </span>
                                             
-                                            <!-- Player Badge (A or D) -->
-                                            <span class="text-sm font-bold w-6 h-6 leading-6 text-center rounded-full text-white ${neutralPlayerBg} shadow-inner">
+                                            <!-- Player Badge (Now supports up to 5 characters comfortably) -->
+                                            <span class="text-xs font-bold min-w-[3rem] px-2 py-1 text-center rounded-full text-white ${neutralPlayerBg} shadow-inner flex-shrink-0">
                                                 ${item.player}
                                             </span>
                                         </div>
